@@ -1,0 +1,60 @@
+The code can be compiled using the below command.
+	make
+	
+The above command will create two binary files "client" and "server"
+
+To execute the server you have to run the below command
+	./server
+	Once the above command is run , the server listens on two ports.
+	Port - 5589 - This is used to handle requests from the user for echo.
+	Port - 5590 - This is used to handle requests from the user for time.
+	
+	The server will run in an infinite loop. It can be terminated using ^c.
+
+To execute client you have to use the below command 
+	./client localhost OR ./client 127.0.0.1
+	If localhost is typed , the IP address is printed on the console.
+	If IP address is typed , the hostname is printed on the console.
+	
+	After executing the command the user can type , "echo" or "time" or "quit" on the commandline.
+		- Entering "echo" will open an Xterm terminal.
+			Whatever the user types on the Xterm will be sent to the server.
+			The server will send the exact same response back to the client.
+			The client on receiving the response prints in on its console (Xterm).
+			The client can terminate using ^c or ^d. 
+			Repeated feedbacks will be sent to the parent( main command line) from the child (Xterm) using a half duplex pipe.
+		-Entering "time" will open an Xterm.
+			The client will connect with the receiver.
+			The client will receive periodic updates from the server (every 5 seconds).
+			The client prints the response back on its console(Xterm).
+			The client can terminate using only ^c.
+			
+
+Sample test case - 
+
+Open two terminals , type ./server in one and ./client localhost in terminal 2.
+
+Case 1 - 
+Type echo in terminal 2. It should open an Xterm.
+Type anything in the Xterm window. 
+You should see in Terminal 1 - [Echo][Server] Data received from client - text
+You should then see in Xterm - [Echo][Client] Data received from server - text
+You should see in Terminal 2 - [Feedback][Echo][Client] Data sent and received from server.
+Press ^c or ^d. The Xterm will close and Terminal 2 will ask for input.
+
+Case 2 - 
+Type time in terminal 2. It should open an Xterm.
+You should see in Terminal 1 - [Echo][Server] Data sent to client
+You should then see in Xterm - [Echo][Client] Data received from server - text
+You should see in Terminal 2 - [Feedback][Echo][Client] Data received from server.
+Press ^c. The Xterm will close and Terminal 2 will ask for input.
+
+Case 1 - 
+Type quit in terminal 2. 
+The program should terminate. 
+
+ 
+		
+		
+
+	
