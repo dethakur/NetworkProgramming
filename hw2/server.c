@@ -108,7 +108,7 @@ void udp_reliable_transfer(int sockfd){
 		receive_data(new_sockfd,&data,&buf);
 		printf("[Child][Server] Interrupted!!! Ack Received\n");
 	}
-
+	close(sockfd);
 	while(1){
 		bzero(&buf,sizeof(buf));
 		strcpy(buf,"success");
@@ -220,7 +220,7 @@ void send_new_data(void* addr, socklen_t len,int sockfd){
 //
 //}
 void send_data(int sockfd,char* buf){
-	printf("[Server] Sending data to the client = %d\n",sockfd);
+	printf("[Server] Sending data to the client = %s\n",buf);
 	socklen_t clilen = sizeof(cliaddr);
 	struct udp_data ack_data;
 	struct iovec iovec_send[2];

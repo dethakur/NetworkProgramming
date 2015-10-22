@@ -82,25 +82,19 @@ int main(int argc,char** argv){
 	Write(sockfd,sendline,strlen(sendline));
 	char buf[MAXLINE];
 	//This is to receive the ack from server
-	receive_file_data(sockfd,NULL,0,&buf);
+	receive_file_data(sockfd,NULL,0,(char*)&buf);
 	printf("Ack was received!!\n");
 	//This is to receive the new port_number
-	while(1){
-		receive_file_data(sockfd,NULL,0,&buf);
-		printf("Port Number = %s!!\n",buf);
-	}
+//	while(1){
+	receive_file_data(sockfd,NULL,0,(char*)&buf);
+	printf("Port Number = %s!!\n",buf);
+//	}
 	char *ptr;
 	int new_port_number = strtol(buf,ptr,10);
 
 
 	create_new_connection(new_port_number);
-
-	while(1){
-		bzero(&buf,sizeof(buf));
-
-		receive_file_data(sockfd,NULL,0,&buf);
-
-	}
+	printf("[Client]Done creating connection with new server");
 
 	close(sockfd);
 	printf("Writinf done!!\n");
@@ -127,6 +121,25 @@ void create_new_connection(int port_num){
 	printf("Comes here !?!\n");
 	//	send_file_name(sockfd,(SA*)&servaddr,sizeof(servaddr));
 	Write(sockfd,sendline,strlen(sendline));
+
+	fd_set rset;
+	char buf[MAXLINE];
+	while(1){
+		FD_ZERO(&rset);
+		FD_SET(sockfd,&rset);
+		int maxfd1 = sockfd  +1;
+		printf("[Client] Waiting for Data from server\n");
+		Select(maxfd1,&rset,NULL,NULL,NULL);
+		if(FD_ISSET(sockfd,&rset)){
+			receive_file_data(sockfd,NULL,0,(char*)&buf);
+			printf("Select interrupted in client!!!. Data received = %s\n",buf);
+
+		}
+//		bzero(&buf,sizeof(buf));
+//
+//		receive_file_data(sockfd,NULL,0,&buf);
+
+	}
 
 
 
