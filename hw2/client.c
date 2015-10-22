@@ -10,6 +10,7 @@ void receive_file_data(int,void*,socklen_t,char*);
 void buffer_reader_thread();
 void push_data_to_buffer(char*);
 int get_window_size();
+void create_new_connection(int);
 
 typedef enum {ack,ping,data} data_type;
 
@@ -80,17 +81,25 @@ int main(int argc,char** argv){
 	//	send_file_name(sockfd,(SA*)&servaddr,sizeof(servaddr));
 	Write(sockfd,sendline,strlen(sendline));
 	char buf[MAXLINE];
+	//This is to receive the ack from server
 	receive_file_data(sockfd,NULL,0,&buf);
-	printf("Data Received 1 = %s",buf);
-	receive_file_data(sockfd,NULL,0,&buf);
+	printf("Ack was received!!\n");
+	//This is to receive the new port_number
+	while(1){
+		receive_file_data(sockfd,NULL,0,&buf);
+		printf("Port Number = %s!!\n",buf);
+	}
 	char *ptr;
 	int new_port_number = strtol(buf,ptr,10);
-	printf("New port number = %d\n",new_port_number);
+
+
+	create_new_connection(new_port_number);
 
 	while(1){
 		bzero(&buf,sizeof(buf));
+
 		receive_file_data(sockfd,NULL,0,&buf);
-		printf("Data Received = %s\n",buf);
+
 	}
 
 	close(sockfd);
@@ -99,7 +108,29 @@ int main(int argc,char** argv){
 	return 0;
 
 }
+void create_new_connection(int port_num){
+	printf("New port number = %d\n",port_num);
+	int sockfd;
+	struct sockaddr_in servaddr;
 
+	bzero(&servaddr,sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(port_num);
+
+	sockfd = socket(AF_INET,SOCK_DGRAM,0);
+
+	Connect(sockfd,(SA*)&servaddr,sizeof(servaddr));
+
+	char sendline[MAXLINE];
+
+	strcpy(sendline,"chutiya");
+	printf("Comes here !?!\n");
+	//	send_file_name(sockfd,(SA*)&servaddr,sizeof(servaddr));
+	Write(sockfd,sendline,strlen(sendline));
+
+
+
+}
 
 
 void receive_file_data(int sockfd,void* servaddr, socklen_t servlen,char* buf){
@@ -107,8 +138,8 @@ void receive_file_data(int sockfd,void* servaddr, socklen_t servlen,char* buf){
 //	char send_buf[MAXLINE];
 	struct iovec iovec_send[2];
 
-	msgrecv.msg_name = NULL;
-	msgrecv.msg_namelen = 0;
+	msgrecv.msg_name = servaddr;
+	msgrecv.msg_namelen = servlen;
 
 	iovec_send[0].iov_base = (void*)&send_hdr;
 	iovec_send[0].iov_len = sizeof(struct udp_data);
@@ -170,6 +201,7 @@ void send_ack(void* addr, socklen_t len,int sockfd){
 	msgrecv.msg_iov = (void*)&iovec_send;
 	msgrecv.msg_iovlen = 1;
 
+	printf("[Client] Ack sent from the client \n");
 	Sendmsg(sockfd,&msgrecv,0);
 }
 //
