@@ -4,13 +4,13 @@
 #include "common.h"
 #include <string.h>
 
-#define RWND_SIZE 10
+#define RWND_SIZE 5
 //void dg_cli_new(int,SA*,socklen_t);
 void buffer_reader_thread();
-void push_data_to_buffer(char*);
+void push_data_to_buffer(char*,int);
 int get_window_size();
 void create_new_connection(int);
-
+void send_ack_to_server(int,struct sockaddr_in,socklen_t,int);
 
 
 
@@ -19,6 +19,7 @@ struct udp_data send_hdr,recv_hdr;
 struct buffer{
 	char data[MAXLINE];
 	uint32_t is_filled;
+	uint32_t seq;
 	struct buffer *next;
 };
 
@@ -99,7 +100,7 @@ int main(int argc,char** argv){
 	printf("[Client]Done creating connection with new server");
 
 	close(sockfd);
-	printf("Writinf done!!\n");
+	printf("Writing done!!\n");
 
 	return 0;
 
@@ -116,21 +117,10 @@ void create_new_connection(int port_num){
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);
 	query_obj q_obj;
 	bzero(&q_obj,sizeof(q_obj));
-//	Connect(sockfd,(SA*)&servaddr,sizeof(servaddr));
 
 	send_udp_data(sockfd,(SA*)&servaddr,sizeof(servaddr),&q_obj);
-	char sendline[MAXLINE];
-
-	strcpy(sendline,"chutiya");
-	printf("Comes here !?!\n");
-	//	send_file_name(sockfd,(SA*)&servaddr,sizeof(servaddr));
-	//This code has to be changed to acknowledgement.
-//	send
-//	Write(sockfd,sendline,strlen(sendline));
 
 	fd_set rset;
-
-//	query_obj q_obj;
 
 	while(1){
 		FD_ZERO(&rset);
@@ -141,36 +131,32 @@ void create_new_connection(int port_num){
 		if(FD_ISSET(sockfd,&rset)){
 			bzero(&q_obj,sizeof(query_obj));
 			recv_udp_data(sockfd,NULL,0,&q_obj);
-
+			push_data_to_buffer(&q_obj.buf,q_obj.config.seq);
 			printf("Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
-
-//			bzero(&q_obj.buf,sizeof(q_obj.buf));
-			q_obj.config.type == ack;
-			q_obj.config.seq = 99;
-			strcpy(q_obj.buf,"Hello!!");
-//			init_query_obj(sockfd,(SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),q_obj);
-//			init_query_obj((SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),&q_obj);
-			char sendline[MAXLINE];
-			strcpy(sendline,"chutiya");
-//			Write(sockfd,&q_obj.msgdata,sizeof(q_obj.msgdata));
-			send_udp_data(sockfd,(SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),&q_obj);
-
-
-
+			send_ack_to_server(sockfd,q_obj.sock_addr,sizeof(q_obj.sock_addr),q_obj.config.seq);
 		}
 	}
 }
 
-void push_data_to_buffer(char* send_buf){
+void push_data_to_buffer(char* send_buf,int seq_num){
 	int i=0;
 	for(i=0;i<RWND_SIZE;i++){
 		if(text_buffer[i].is_filled == -1){
 			strcpy(text_buffer[i].data,send_buf);
 			text_buffer[i].is_filled = 1;
-			printf("[Data] Pushed to buffer");
+			text_buffer[i].seq = seq_num;
+			printf("[Data] Pushed to buffer with data = %s and seq_num = %d",send_buf,seq_num);
 			break;
 		}
 	}
+}
+void send_ack_to_server(int sockfd,struct sockaddr_in cliaddr,socklen_t clilen,int seq){
+	query_obj q_obj;
+	q_obj.config.type == ack;
+	q_obj.config.seq = seq+1;
+	q_obj.config.rwnd = get_window_size();
+	strcpy(q_obj.buf,"Hello!!");
+	send_udp_data(sockfd,(SA*)&cliaddr,clilen,&q_obj);
 }
 int get_window_size(){
 	int count = 0;

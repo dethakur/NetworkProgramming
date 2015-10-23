@@ -125,16 +125,17 @@ void udp_reliable_transfer(int sockfd,struct sockaddr_in cliaddr){
 void* send_file_data(void* arg){
 
 	th_config config;
+	int seq_num = 0;
 	config = *((th_config*)(arg));
 	query_obj q_obj;
 	while(1){
 		bzero(&q_obj,sizeof(q_obj));
 		strcpy(q_obj.buf,"success");
 		q_obj.config.type = data;
+		q_obj.config.seq = seq_num;
 		printf("[Server] Data sent to server\n");
 		send_udp_data(config.sockfd,(SA*)&config.cliaddr,config.clilen,&q_obj);
-
-		//		send_data(new_sockfd,buf);
+		seq_num+=1;
 		sleep(1);
 	}
 
@@ -149,9 +150,7 @@ void* receive_ack(void* arg){
 		q_obj.config.type = data;
 
 		recv_udp_data(config.sockfd,(SA*)&config.cliaddr,config.clilen,&q_obj);
-		printf("Seq number returned = %d\n",q_obj.config.seq);
-		printf("[Server] Ack received by server\n");
-		//		send_data(new_sockfd,buf);
-//		sleep(5);
+		printf("[Server][ACK]Window Size = %d and Seq Num = %d\n",q_obj.config.rwnd,q_obj.config.seq);
+
 	}
 }
