@@ -4,20 +4,16 @@
 #include <fcntl.h>
 #include <sys/file.h>
 
-
-
-//struct udp_data send_hdr;
-//struct udp_data recv_hdr;
-//struct sockaddr_in cliaddr;
-
-//void dg_server(int,SA*,socklen_t);
-void receive_filename(int);
 void udp_reliable_transfer(int,struct sockaddr_in);
+void* send_file_data(void*);
+void* receive_ack(void*);
 
-
-
-
-
+struct thread_config{
+	struct sockaddr_in cliaddr;
+	socklen_t clilen;
+	int sockfd;
+};
+typedef struct thread_config th_config;
 int main(int argc,char* argv[]){
 	int sockfd;
 	struct sockaddr_in servaddr,cliaddr;
@@ -33,7 +29,7 @@ int main(int argc,char* argv[]){
 
 	fd_set rset;
 	char buf[MAXLINE];
-	struct query_obj q_obj;
+	query_obj q_obj;
 	while(1){
 		FD_ZERO(&rset);
 		FD_SET(sockfd,&rset);
@@ -44,7 +40,7 @@ int main(int argc,char* argv[]){
 			printf("[Parent][Server]Select got broken! which means socket got interrupted \n");
 			struct sockaddr_in cliaddr;
 			bzero(&q_obj,sizeof(q_obj));
-			get_udp_data(sockfd,NULL,0,&q_obj);
+			recv_udp_data(sockfd,NULL,0,&q_obj);
 			cliaddr = q_obj.sock_addr;
 
 			bzero(&q_obj,sizeof(q_obj));
@@ -54,6 +50,7 @@ int main(int argc,char* argv[]){
 			pid_t pid = fork();
 			if(pid == 0){
 				udp_reliable_transfer(sockfd,cliaddr);
+				exit(0);
 			}else{
 				continue;
 			}
@@ -65,7 +62,7 @@ int main(int argc,char* argv[]){
 
 void udp_reliable_transfer(int sockfd,struct sockaddr_in cliaddr){
 	int new_sockfd;
-	struct query_obj q_obj;
+	query_obj q_obj;
 	struct sockaddr_in servaddr,sock_addr;
 	socklen_t len2 = sizeof(sock_addr);
 
@@ -92,7 +89,8 @@ void udp_reliable_transfer(int sockfd,struct sockaddr_in cliaddr){
 	q_obj.config.type = data;
 	send_udp_data(sockfd,(SA*)&cliaddr,sizeof(cliaddr),&q_obj);
 
-	//Wait for acknowledgement
+
+	//Wait for acknowledgement. Use select.
 
 	fd_set rset;
 
@@ -103,21 +101,57 @@ void udp_reliable_transfer(int sockfd,struct sockaddr_in cliaddr){
 	Select(maxfd1,&rset,NULL,NULL,NULL);
 	if(FD_ISSET(new_sockfd,&rset)){
 		bzero(&q_obj,sizeof(q_obj));
-		get_udp_data(new_sockfd,(SA*)&cliaddr,sizeof(cliaddr),&q_obj);
-//		receive_data(new_sockfd,&data,&buf);
-
+		recv_udp_data(new_sockfd,(SA*)&cliaddr,sizeof(cliaddr),&q_obj);
+		//Ack Received!
 		printf("[Child][Server] Interrupted!!! Ack Received\n");
 	}
 	close(sockfd);
 
+	pthread_t tid1;
+	pthread_t tid2;
+
+	th_config config;
+	config.sockfd = new_sockfd;
+	config.cliaddr = cliaddr;
+	config.clilen = sizeof(cliaddr);
+
+	Pthread_create(&tid1,NULL,&send_file_data,&config);
+	Pthread_create(&tid2,NULL,&receive_ack,&config);
+
+	pthread_join(tid1,NULL);
+	printf("UDP connection done\n");
+
+}
+void* send_file_data(void* arg){
+
+	th_config config;
+	config = *((th_config*)(arg));
+	query_obj q_obj;
 	while(1){
 		bzero(&q_obj,sizeof(q_obj));
 		strcpy(q_obj.buf,"success");
 		q_obj.config.type = data;
-		send_udp_data(new_sockfd,(SA*)&cliaddr,sizeof(cliaddr),&q_obj);
-//		send_data(new_sockfd,buf);
+		printf("[Server] Data sent to server\n");
+		send_udp_data(config.sockfd,(SA*)&config.cliaddr,config.clilen,&q_obj);
+
+		//		send_data(new_sockfd,buf);
 		sleep(1);
 	}
 
+}
+void* receive_ack(void* arg){
+	th_config config;
+	config = *((th_config*)(arg));
+	query_obj q_obj;
+	while(1){
+		bzero(&q_obj,sizeof(q_obj));
+		strcpy(q_obj.buf,"success");
+		q_obj.config.type = data;
 
+		recv_udp_data(config.sockfd,(SA*)&config.cliaddr,config.clilen,&q_obj);
+		printf("Seq number returned = %d\n",q_obj.config.seq);
+		printf("[Server] Ack received by server\n");
+		//		send_data(new_sockfd,buf);
+//		sleep(5);
+	}
 }

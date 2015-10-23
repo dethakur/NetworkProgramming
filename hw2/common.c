@@ -31,7 +31,7 @@ void send_udp_data(int sockfd,void* servaddr,socklen_t servlen,struct query_obj*
 	Sendmsg(sockfd,&obj->msgdata,0);
 }
 
-void get_udp_data(int sockfd,void* servaddr,socklen_t servlen,struct query_obj* obj){
+void recv_udp_data(int sockfd,void* servaddr,socklen_t servlen,struct query_obj* obj){
 	init_query_obj(servaddr,servlen,obj);
 	Recvmsg(sockfd,&obj->msgdata,0);
 }

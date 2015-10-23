@@ -13,10 +13,12 @@ struct query_obj{
 	struct udp_data config;
 	char buf[MAXLINE];
 	struct iovec iovec_send[2];
-	struct sockaddr_in sock_addr;
+	struct sockaddr_in sock_addr; //This will be used to know the address of query received
 };
+
+typedef struct query_obj query_obj;
 
 void init_query_obj(void* ,socklen_t ,struct query_obj* );
 
-void get_udp_data(int sockfd,void*,socklen_t,struct query_obj*);
+void recv_udp_data(int sockfd,void*,socklen_t,struct query_obj*);
 void send_udp_data(int sockfd,void*,socklen_t,struct query_obj*);

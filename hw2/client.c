@@ -30,7 +30,7 @@ int main(int argc,char** argv){
 
 	int sockfd;
 	struct sockaddr_in servaddr,cliaddr,sock_addr;
-	struct query_obj q_obj;
+	query_obj q_obj;
 
 	bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -76,16 +76,16 @@ int main(int argc,char** argv){
 
 
 	do{
-		bzero(&q_obj,sizeof(struct query_obj));
-		get_udp_data(sockfd,NULL,0,&q_obj);
+		bzero(&q_obj,sizeof(query_obj));
+		recv_udp_data(sockfd,NULL,0,&q_obj);
 		printf("Type of data = %d = ",q_obj.config.type);
 	}while(q_obj.config.type != ack);
 
 	printf("Ack was received!!\n");
 
 	do{
-		bzero(&q_obj,sizeof(struct query_obj));
-		get_udp_data(sockfd,NULL,0,&q_obj);
+		bzero(&q_obj,sizeof(query_obj));
+		recv_udp_data(sockfd,NULL,0,&q_obj);
 		printf("Port Number = %s!!\n",q_obj.buf);
 		printf("Data type = %d!!\n",q_obj.config.type);
 
@@ -114,19 +114,23 @@ void create_new_connection(int port_num){
 	servaddr.sin_port = htons(port_num);
 
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);
+	query_obj q_obj;
+	bzero(&q_obj,sizeof(q_obj));
+//	Connect(sockfd,(SA*)&servaddr,sizeof(servaddr));
 
-	Connect(sockfd,(SA*)&servaddr,sizeof(servaddr));
-
+	send_udp_data(sockfd,(SA*)&servaddr,sizeof(servaddr),&q_obj);
 	char sendline[MAXLINE];
 
 	strcpy(sendline,"chutiya");
 	printf("Comes here !?!\n");
 	//	send_file_name(sockfd,(SA*)&servaddr,sizeof(servaddr));
-	Write(sockfd,sendline,strlen(sendline));
+	//This code has to be changed to acknowledgement.
+//	send
+//	Write(sockfd,sendline,strlen(sendline));
 
 	fd_set rset;
-//	char buf[MAXLINE];
-	struct query_obj q_obj;
+
+//	query_obj q_obj;
 
 	while(1){
 		FD_ZERO(&rset);
@@ -135,10 +139,23 @@ void create_new_connection(int port_num){
 		printf("[Client] Waiting for Data from server\n");
 		Select(maxfd1,&rset,NULL,NULL,NULL);
 		if(FD_ISSET(sockfd,&rset)){
-			bzero(&q_obj,sizeof(struct query_obj));
+			bzero(&q_obj,sizeof(query_obj));
+			recv_udp_data(sockfd,NULL,0,&q_obj);
 
-			get_udp_data(sockfd,NULL,0,&q_obj);
 			printf("Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
+
+//			bzero(&q_obj.buf,sizeof(q_obj.buf));
+			q_obj.config.type == ack;
+			q_obj.config.seq = 99;
+			strcpy(q_obj.buf,"Hello!!");
+//			init_query_obj(sockfd,(SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),q_obj);
+//			init_query_obj((SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),&q_obj);
+			char sendline[MAXLINE];
+			strcpy(sendline,"chutiya");
+//			Write(sockfd,&q_obj.msgdata,sizeof(q_obj.msgdata));
+			send_udp_data(sockfd,(SA*)&q_obj.sock_addr,sizeof(q_obj.sock_addr),&q_obj);
+
+
 
 		}
 	}

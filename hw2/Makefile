@@ -7,7 +7,7 @@ LIBS =  -lsocket\
 FLAGS =  -g -O2
 CFLAGS = ${FLAGS} -I/home/courses/cse533/Stevens/unpv13e_solaris2.10/lib
 
-all: server client prifinfo_plus
+all: server client clean
 
 server: server.o get_ifi_info_plus.o
 	${CC} ${FLAGS} -o server server.o common.o get_ifi_info_plus.o ${LIBS}
@@ -34,5 +34,5 @@ prifinfo_plus.o: prifinfo_plus.c
 	${CC} ${CFLAGS} -c prifinfo_plus.c
 
 clean:
-	rm server.o client.o prifinfo_plus.o get_ifi_info_plus.o common.o
+	rm server.o client.o get_ifi_info_plus.o common.o
 
