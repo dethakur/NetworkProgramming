@@ -179,6 +179,7 @@ void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 	q_obj.config.rwnd = get_window_size();
 	q_obj.config.ts = ts;
 	strcpy(q_obj.buf, "Hello!!");
+	printf("Sending ack to server with new seq num %d\n", q_obj.config.seq);
 	send_udp_data(sockfd, (SA*) &cliaddr, clilen, &q_obj);
 }
 int get_window_size() {

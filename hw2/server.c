@@ -4,11 +4,15 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <setjmp.h>
-#include "unprtt.h"
+#include "./unprtt.h"
+#include "./rtt.c"
 
 void udp_reliable_transfer(int, struct sockaddr_in);
 void* send_file_data(void*);
 void* receive_ack(void*);
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 //void find_addresses(iAddr*);
 
 struct thread_config {
@@ -159,6 +163,8 @@ void* send_file_data(void* arg) {
 	config->last_unacked_seq = -1;
 
 	while (1) {
+		pthread_mutex_lock(&mutex);
+
 		int rwnd = config->rwnd;
 		bzero(&q_obj, sizeof(q_obj));
 		if (rwnd != 0) {
@@ -175,25 +181,27 @@ void* send_file_data(void* arg) {
 				q_obj.config.seq = config->last_unacked_seq;
 			} else {
 				q_obj.config.ts = rtt_ts(config->rttinfo_ptr);
-				printf("ts set before send is %d\n", q_obj.config.ts);
-				q_obj.config.seq = seq_num;
 				seq_num += 1;
+				q_obj.config.seq = seq_num;
 			}
 
 			q_obj.config.type = data;
 			strcpy(q_obj.buf, "success");
 			sleep_time = 1;
-			printf("[Data] Data sent to server with rwnd size = %d\n",
-					config->rwnd);
+			printf(
+					"[Data] Data sent to server with rwnd size = %d and Seq num %d\n",
+					config->rwnd, q_obj.config.seq);
 		} else {
 			q_obj.config.type = ping;
 			sleep_time = 1;
 			printf("[Ping] Data sent to server with rwnd size = %d\n",
 					config->rwnd);
+			q_obj.config.seq = seq_num;
 		}
 
-		q_obj.config.seq = seq_num;
 		rtt_newpack(config->rttinfo_ptr);
+
+		pthread_mutex_unlock(&mutex);
 		send_udp_data(config->sockfd, (SA*) &config->cliaddr, config->clilen,
 				&q_obj);
 
@@ -224,13 +232,16 @@ void* receive_ack(void *conf) {
 	int prev_seq_num = 0;
 	Signal(SIGALRM, sig_alrm);
 	while (1) {
-		//	alarm(rtt_start(rttinfo_ptr)); /* calc timeout value & start timer */
-		printf("alarm value is %d\n", rtt_start(rttinfo_ptr));
-		alarm(10);
+		pthread_mutex_lock(&mutex);
+
+		int alarm_secs = rtt_start(rttinfo_ptr);
+//		printf("Setting alarm value to: %d\n", alarm_secs);
+		alarm(10); /* calc timeout value & start timer */
+		//		alarm(10);
 		if (sigsetjmp(jmpbuf, 1) != 0) {
 			printf("Timeout happened\n");
 			if (rtt_timeout(rttinfo_ptr) < 0) {
-				printf("dg_send_recv: no response from server, giving up");
+				printf("no response from peer, giving up");
 				*(config->rttinit_ptr) = 0;
 				errno = ETIMEDOUT;
 				return;
@@ -240,27 +251,37 @@ void* receive_ack(void *conf) {
 			*(config->rttinit_ptr) = 0;
 		}
 
+		pthread_mutex_unlock(&mutex);
+
 		ssize_t n;
 		do {
 			bzero(&q_obj, sizeof(q_obj));
 			strcpy(q_obj.buf, "success");
 			q_obj.config.type = data;
 
+			printf(
+					"Last acknowledged was %d. Trying to receive ack in process %d\n",
+					prev_seq_num, getpid());
 			n = recv_udp_data(config->sockfd, (SA*) &config->cliaddr,
 					config->clilen, &q_obj);
-			printf("Last acknowledged Seq Num %d\n", prev_seq_num);
 			printf("[ACK]Window Size = %d and Seq Num = %d\n",
 					q_obj.config.rwnd, q_obj.config.seq);
+
+			pthread_mutex_lock(&mutex);
 			config->rwnd = q_obj.config.rwnd;
+			pthread_mutex_unlock(&mutex);
 
 		} while (n < sizeof(struct udp_data) || q_obj.config.seq
 				<= prev_seq_num);
 
 		alarm(0); /* stop SIGALRM timer *//* calculate & store new RTT estimator values */
-		printf("rtt items are %d %d\n", rtt_ts(rttinfo_ptr), q_obj.config.ts);
+
+		pthread_mutex_lock(&mutex);
+//		printf("rtt items are %d %d\n", rtt_ts(rttinfo_ptr), q_obj.config.ts);
 		rtt_stop(rttinfo_ptr, rtt_ts(rttinfo_ptr) - q_obj.config.ts);
-		printf("tan da dannnn \n");
 		config->last_unacked_seq = -1;
+		pthread_mutex_unlock(&mutex);
+
 		prev_seq_num = q_obj.config.seq;
 	}
 }
