@@ -1,4 +1,5 @@
 #include "unp.h"
+#include "unpthread.h"
 #include <unistd.h>
 #include "unpthread.h"
 #include "common.h"
@@ -6,7 +7,7 @@
 
 #define RWND_SIZE 5
 //void dg_cli_new(int,SA*,socklen_t);
-void buffer_reader_thread();
+void* buffer_reader_thread(void*);
 void push_data_to_buffer(char*,int);
 int get_window_size();
 void create_new_connection(int);
@@ -30,6 +31,7 @@ struct buffer text_buffer[RWND_SIZE];
 int main(int argc,char** argv){
 
 	int sockfd;
+	pthread_t tid;
 	struct sockaddr_in servaddr,cliaddr,sock_addr;
 	query_obj q_obj;
 
@@ -51,12 +53,14 @@ int main(int argc,char** argv){
 		text_buffer[i].is_filled = -1;
 	}
 
+	Pthread_create(&tid,NULL,&buffer_reader_thread,NULL);
+
 	bind(sockfd,(SA*)&cliaddr,sizeof(cliaddr));
 
 	bzero(&sock_addr,sizeof(sock_addr));
 	socklen_t len = sizeof(struct sockaddr_in);
 	getsockname(sockfd, (SA*)&sock_addr,&len);
-	printf("CLient port = %d\n",ntohs(sock_addr.sin_port));
+//	printf("CLient port = %d\n",ntohs(sock_addr.sin_port));
 
 	Connect(sockfd,(SA*)&servaddr,sizeof(servaddr));
 
@@ -66,12 +70,12 @@ int main(int argc,char** argv){
 
 
 	getpeername(sockfd,(SA*)&peer_sock,&len2);
-	printf("Server port = %d\n",ntohs(peer_sock.sin_port));
+//	printf("Server port = %d\n",ntohs(peer_sock.sin_port));
 
 	char sendline[MAXLINE],recvline[MAXLINE];
 
 	strcpy(sendline,"file_name");
-	printf("Comes here !?!\n");
+//	printf("Comes here !?!\n");
 
 	Write(sockfd,sendline,strlen(sendline));
 
@@ -82,13 +86,13 @@ int main(int argc,char** argv){
 		printf("Type of data = %d = ",q_obj.config.type);
 	}while(q_obj.config.type != ack);
 
-	printf("Ack was received!!\n");
+//	printf("Ack was received!!\n");
 
 	do{
 		bzero(&q_obj,sizeof(query_obj));
 		recv_udp_data(sockfd,NULL,0,&q_obj);
 		printf("Port Number = %s!!\n",q_obj.buf);
-		printf("Data type = %d!!\n",q_obj.config.type);
+//		printf("Data type = %d!!\n",q_obj.config.type);
 
 	}while(q_obj.config.type != data);
 
@@ -126,17 +130,23 @@ void create_new_connection(int port_num){
 		FD_ZERO(&rset);
 		FD_SET(sockfd,&rset);
 		int maxfd1 = sockfd  +1;
-		printf("[Client] Waiting for Data from server\n");
+//		printf("[Client] Waiting for Data from server\n");
 		Select(maxfd1,&rset,NULL,NULL,NULL);
 		if(FD_ISSET(sockfd,&rset)){
 			bzero(&q_obj,sizeof(query_obj));
 			recv_udp_data(sockfd,NULL,0,&q_obj);
-			push_data_to_buffer(&q_obj.buf,q_obj.config.seq);
-			printf("Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
+			if(q_obj.config.type == data){
+//				printf("[Data]Data Query Received\n");
+				push_data_to_buffer((char*)&q_obj.buf,q_obj.config.seq);
+			}else{
+				printf("[Ping]Ping Query Received\n");
+			}
+//			printf("[Client]Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
 			send_ack_to_server(sockfd,q_obj.sock_addr,sizeof(q_obj.sock_addr),q_obj.config.seq);
 		}
 	}
 }
+
 
 void push_data_to_buffer(char* send_buf,int seq_num){
 	int i=0;
@@ -145,10 +155,26 @@ void push_data_to_buffer(char* send_buf,int seq_num){
 			strcpy(text_buffer[i].data,send_buf);
 			text_buffer[i].is_filled = 1;
 			text_buffer[i].seq = seq_num;
-			printf("[Data] Pushed to buffer with data = %s and seq_num = %d",send_buf,seq_num);
+			printf("[Data] Pushed to buffer with data = %s and seq_num = %d\n",send_buf,seq_num);
 			break;
 		}
 	}
+}
+
+//This should read only continous packets
+void* buffer_reader_thread(void* arg){
+	while(1){
+		int i=0;
+		for(i=0;i<RWND_SIZE;i++){
+			if(text_buffer[i].is_filled == 1){
+				printf("[Buffer][Thread] File Data = %s with seq = %d\n",text_buffer[i].data,text_buffer[i].seq);
+				bzero(&text_buffer[i].data,sizeof(text_buffer[i].data));
+				text_buffer[i].is_filled = -1;
+			}
+		}
+		sleep(10);
+	}
+
 }
 void send_ack_to_server(int sockfd,struct sockaddr_in cliaddr,socklen_t clilen,int seq){
 	query_obj q_obj;

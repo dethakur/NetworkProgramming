@@ -8,6 +8,12 @@ struct udp_data{
 	data_type type;
 };
 
+struct iAddr{
+	char ip_addr[MAXLINE];
+	char mask[MAXLINE];
+};
+typedef struct iAddr iAddr;
+
 struct query_obj{
 	struct msghdr msgdata;
 	struct udp_data config;
@@ -22,3 +28,6 @@ void init_query_obj(void* ,socklen_t ,struct query_obj* );
 
 void recv_udp_data(int sockfd,void*,socklen_t,struct query_obj*);
 void send_udp_data(int sockfd,void*,socklen_t,struct query_obj*);
+int get_addr_count();
+void fill_addr_contents(iAddr *addr);
+

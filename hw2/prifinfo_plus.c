@@ -40,13 +40,13 @@ main(int argc, char **argv)
 		printf(">\n");
 /* *INDENT-ON* */
 
-		if ( (i = ifi->ifi_hlen) > 0) {
-			ptr = ifi->ifi_haddr;
-			do {
-				printf("%s%x", (i == ifi->ifi_hlen) ? "  " : ":", *ptr++);
-			} while (--i > 0);
-			printf("\n");
-		}
+//		if ( (i = ifi->ifi_hlen) > 0) {
+//			ptr = ifi->ifi_haddr;
+//			do {
+//				printf("%s%x", (i == ifi->ifi_hlen) ? "  " : ":", *ptr++);
+//			} while (--i > 0);
+//			printf("\n");
+//		}
 		if (ifi->ifi_mtu != 0)
 			printf("  MTU: %d\n", ifi->ifi_mtu);
 
