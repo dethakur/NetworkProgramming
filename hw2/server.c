@@ -6,6 +6,7 @@
 #include <setjmp.h>
 #include "./unprtt.h"
 #include "./rtt.c"
+#include  <signal.h>
 
 void udp_reliable_transfer(int, struct sockaddr_in);
 void* send_file_data(void*);
@@ -142,8 +143,13 @@ void udp_reliable_transfer(int sockfd, struct sockaddr_in cliaddr) {
 	config.rttinfo_ptr = &rttinfo_data;
 	config.rttinit_ptr = &rttinit;
 
-	Pthread_create(&tid1, NULL, &send_file_data, &config);
 	Pthread_create(&tid2, NULL, &receive_ack, &config);
+
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGALRM);
+	pthread_sigmask(SIG_SETMASK, &set, NULL);
+	Pthread_create(&tid1, NULL, &send_file_data, &config);
 
 	pthread_join(tid1, NULL);
 	pthread_join(tid2, NULL);
@@ -235,8 +241,8 @@ void* receive_ack(void *conf) {
 		pthread_mutex_lock(&mutex);
 
 		int alarm_secs = rtt_start(rttinfo_ptr);
-//		printf("Setting alarm value to: %d\n", alarm_secs);
-		alarm(10); /* calc timeout value & start timer */
+		//		printf("Setting alarm value to: %d\n", alarm_secs);
+		alarm(1); /* calc timeout value & start timer */
 		//		alarm(10);
 		if (sigsetjmp(jmpbuf, 1) != 0) {
 			printf("Timeout happened\n");
@@ -277,7 +283,7 @@ void* receive_ack(void *conf) {
 		alarm(0); /* stop SIGALRM timer *//* calculate & store new RTT estimator values */
 
 		pthread_mutex_lock(&mutex);
-//		printf("rtt items are %d %d\n", rtt_ts(rttinfo_ptr), q_obj.config.ts);
+		//		printf("rtt items are %d %d\n", rtt_ts(rttinfo_ptr), q_obj.config.ts);
 		rtt_stop(rttinfo_ptr, rtt_ts(rttinfo_ptr) - q_obj.config.ts);
 		config->last_unacked_seq = -1;
 		pthread_mutex_unlock(&mutex);

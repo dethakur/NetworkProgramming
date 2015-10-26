@@ -8,10 +8,11 @@
 #define RWND_SIZE 5
 //void dg_cli_new(int,SA*,socklen_t);
 void* buffer_reader_thread(void*);
-void push_data_to_buffer(char*, int);
+void push_data_to_buffer(char*, int, int);
 int get_window_size();
 void create_new_connection(int);
-void send_ack_to_server(int, struct sockaddr_in, socklen_t, int, uint32_t);
+void send_ack_to_server(int, struct sockaddr_in, socklen_t, int, uint32_t,
+		int expected_seq);
 
 //Link List of Buffers
 struct udp_data send_hdr, recv_hdr;
@@ -23,6 +24,8 @@ struct buffer {
 };
 
 struct buffer text_buffer[RWND_SIZE];
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char** argv) {
 
@@ -102,10 +105,28 @@ int main(int argc, char** argv) {
 	return 0;
 
 }
+
+int ispresent(int seq_num) {
+	int i = 0;
+	for (; i < RWND_SIZE; i++) {
+		if (text_buffer[i].is_filled != -1 && text_buffer[i].seq == seq_num) {
+			return 1;
+		}
+	}
+	return 0;
+}
+void update_expected_seq_num(int * expected_seq_num_ptr) {
+	int i = 0;
+	while (ispresent(*expected_seq_num_ptr) == 1) {
+		*expected_seq_num_ptr += 1;
+	}
+}
+
 void create_new_connection(int port_num) {
 	printf("New port number = %d\n", port_num);
 	int sockfd;
 	struct sockaddr_in servaddr;
+	int expected_seq_num = 0;
 
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -128,30 +149,45 @@ void create_new_connection(int port_num) {
 		if (FD_ISSET(sockfd, &rset)) {
 			bzero(&q_obj, sizeof(query_obj));
 			recv_udp_data(sockfd, NULL, 0, &q_obj);
+
+			pthread_mutex_lock(&mutex);
+
 			if (q_obj.config.type == data) {
 				//				printf("[Data]Data Query Received\n");
-				push_data_to_buffer((char*) &q_obj.buf, q_obj.config.seq);
+				push_data_to_buffer((char*) &q_obj.buf, q_obj.config.seq,
+						expected_seq_num);
 			} else {
 				printf("[Ping]Ping Query Received\n");
 			}
 			//			printf("[Client]Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
+			update_expected_seq_num(&expected_seq_num);
 			send_ack_to_server(sockfd, q_obj.sock_addr,
-					sizeof(q_obj.sock_addr), q_obj.config.seq, q_obj.config.ts);
+					sizeof(q_obj.sock_addr), q_obj.config.seq, q_obj.config.ts,
+					expected_seq_num);
+
+			pthread_mutex_unlock(&mutex);
 		}
 	}
 }
 
-void push_data_to_buffer(char* send_buf, int seq_num) {
-	int i = 0;
-	for (i = 0; i < RWND_SIZE; i++) {
-		if (text_buffer[i].is_filled == -1) {
-			strcpy(text_buffer[i].data, send_buf);
-			text_buffer[i].is_filled = 1;
-			text_buffer[i].seq = seq_num;
-			printf("[Data] Pushed to buffer with data = %s and seq_num = %d\n",
-					send_buf, seq_num);
-			break;
+void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
+	// TODO: need to make sure the buffer is cleared once full, else no datagram will be accepted
+	int i = seq_num % RWND_SIZE;
+	if (text_buffer[i].is_filled == -1) {
+		if (seq_num != expected_seq_num) {
+			printf(
+					"Cannot accept this datagram. Expecting one with seq number\n",
+					expected_seq_num);
+			return;
 		}
+		strcpy(text_buffer[i].data, send_buf);
+		text_buffer[i].is_filled = 1;
+		text_buffer[i].seq = seq_num;
+		printf(
+				"[Data] Pushed to buffer at index %d with data = %s and seq_num = %d\n",
+				i, send_buf, seq_num);
+	} else {
+		printf("Buffer is full, dropping datagram with seq num %d\n", seq_num);
 	}
 }
 
@@ -159,6 +195,7 @@ void push_data_to_buffer(char* send_buf, int seq_num) {
 void* buffer_reader_thread(void* arg) {
 	while (1) {
 		int i = 0;
+		pthread_mutex_lock(&mutex);
 		for (i = 0; i < RWND_SIZE; i++) {
 			if (text_buffer[i].is_filled == 1) {
 				printf("[Buffer][Thread] File Data = %s with seq = %d\n",
@@ -167,15 +204,16 @@ void* buffer_reader_thread(void* arg) {
 				text_buffer[i].is_filled = -1;
 			}
 		}
+		pthread_mutex_unlock(&mutex);
 		sleep(10);
 	}
 
 }
 void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
-		socklen_t clilen, int seq, uint32_t ts) {
+		socklen_t clilen, int seq, uint32_t ts, int expected_seq_num) {
 	query_obj q_obj;
 	q_obj.config.type == ack;
-	q_obj.config.seq = seq + 1;
+	q_obj.config.seq = expected_seq_num;
 	q_obj.config.rwnd = get_window_size();
 	q_obj.config.ts = ts;
 	strcpy(q_obj.buf, "Hello!!");
