@@ -145,11 +145,13 @@ void udp_reliable_transfer(int sockfd, struct sockaddr_in cliaddr) {
 
 	Pthread_create(&tid2, NULL, &receive_ack, &config);
 
+	// Got to mask SIGALRM in other threads (current and next child thread)
+	// as they should not be interrupted by SIGALRM.
 	sigset_t set;
 	sigemptyset(&set);
 	sigaddset(&set, SIGALRM);
-	pthread_sigmask(SIG_SETMASK, &set, NULL);
-	Pthread_create(&tid1, NULL, &send_file_data, &config);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+	Pthread_create(&tid1, NULL, &send_file_data, &config); // inherits sigmask from parent thread.
 
 	pthread_join(tid1, NULL);
 	pthread_join(tid2, NULL);
@@ -241,8 +243,8 @@ void* receive_ack(void *conf) {
 		pthread_mutex_lock(&mutex);
 
 		int alarm_secs = rtt_start(rttinfo_ptr);
-		//		printf("Setting alarm value to: %d\n", alarm_secs);
-		alarm(1); /* calc timeout value & start timer */
+		printf("Setting alarm value to: %d\n", alarm_secs);
+		alarm(alarm_secs); /* calc timeout value & start timer */
 		//		alarm(10);
 		if (sigsetjmp(jmpbuf, 1) != 0) {
 			printf("Timeout happened\n");
@@ -256,7 +258,7 @@ void* receive_ack(void *conf) {
 			config->last_unacked_seq = prev_seq_num + 1;
 			*(config->rttinit_ptr) = 0;
 		}
-
+		sleep(10);
 		pthread_mutex_unlock(&mutex);
 
 		ssize_t n;

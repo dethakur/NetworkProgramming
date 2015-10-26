@@ -122,6 +122,12 @@ void update_expected_seq_num(int * expected_seq_num_ptr) {
 	}
 }
 
+int drop_packet(double probability, int max_seed) {
+	double r = (double) (rand() % max_seed) / max_seed;
+	printf("probab %f r %f\n", probability, r);
+	return r > probability;
+}
+
 void create_new_connection(int port_num) {
 	printf("New port number = %d\n", port_num);
 	int sockfd;
@@ -140,6 +146,8 @@ void create_new_connection(int port_num) {
 
 	fd_set rset;
 
+	int max_seed = 10;
+	srand(time(NULL));
 	while (1) {
 		FD_ZERO(&rset);
 		FD_SET(sockfd, &rset);
@@ -149,6 +157,12 @@ void create_new_connection(int port_num) {
 		if (FD_ISSET(sockfd, &rset)) {
 			bzero(&q_obj, sizeof(query_obj));
 			recv_udp_data(sockfd, NULL, 0, &q_obj);
+
+			if (drop_packet(0.3, max_seed)) {
+				printf("Simulating loss of datagram with seq num %d\n",
+						q_obj.config.seq);
+				continue;
+			}
 
 			pthread_mutex_lock(&mutex);
 
@@ -171,12 +185,11 @@ void create_new_connection(int port_num) {
 }
 
 void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
-	// TODO: need to make sure the buffer is cleared once full, else no datagram will be accepted
 	int i = seq_num % RWND_SIZE;
 	if (text_buffer[i].is_filled == -1) {
 		if (seq_num != expected_seq_num) {
 			printf(
-					"Cannot accept this datagram. Expecting one with seq number\n",
+					"Cannot accept this datagram. Expecting one with seq number %d\n",
 					expected_seq_num);
 			return;
 		}
