@@ -124,8 +124,9 @@ void update_expected_seq_num(int * expected_seq_num_ptr) {
 
 int drop_packet(double probability, int max_seed) {
 	double r = (double) (rand() % max_seed) / max_seed;
-	printf("probab %f r %f\n", probability, r);
-	return r > probability;
+//	printf("probab = %f r = %f\n", probability, r);
+	//This has to be opposite. A probability of 1 means all packets have to be dropped.
+	return probability > r;
 }
 
 void create_new_connection(int port_num) {
@@ -158,8 +159,8 @@ void create_new_connection(int port_num) {
 			bzero(&q_obj, sizeof(query_obj));
 			recv_udp_data(sockfd, NULL, 0, &q_obj);
 
-			if (drop_packet(0.3, max_seed)) {
-				printf("Simulating loss of datagram with seq num %d\n",
+			if (drop_packet(0.5, max_seed)) {
+				printf("[DROP]Simulating loss of datagram with seq num %d\n",
 						q_obj.config.seq);
 				continue;
 			}
@@ -167,7 +168,7 @@ void create_new_connection(int port_num) {
 			pthread_mutex_lock(&mutex);
 
 			if (q_obj.config.type == data) {
-				//				printf("[Data]Data Query Received\n");
+//				printf("[Data]Data Query Received with seq no = %d\n",q_obj.config.seq);
 				push_data_to_buffer((char*) &q_obj.buf, q_obj.config.seq,
 						expected_seq_num);
 			} else {
@@ -188,19 +189,19 @@ void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
 	int i = seq_num % RWND_SIZE;
 	if (text_buffer[i].is_filled == -1) {
 		if (seq_num != expected_seq_num) {
-			printf(
-					"Cannot accept this datagram. Expecting one with seq number %d\n",
-					expected_seq_num);
+//			printf(
+//					"[DROP][DATA]Cannot accept this datagram. Expecting one with seq number %d\n",
+//					expected_seq_num);
 			return;
 		}
 		strcpy(text_buffer[i].data, send_buf);
 		text_buffer[i].is_filled = 1;
 		text_buffer[i].seq = seq_num;
-		printf(
-				"[Data] Pushed to buffer at index %d with data = %s and seq_num = %d\n",
-				i, send_buf, seq_num);
+//		printf(
+//				"[Data] Pushed to buffer at index %d with data = %s and seq_num = %d\n",
+//				i, send_buf, seq_num);
 	} else {
-		printf("Buffer is full, dropping datagram with seq num %d\n", seq_num);
+//		printf("Buffer is full, dropping datagram with seq num %d\n", seq_num);
 	}
 }
 
@@ -218,7 +219,7 @@ void* buffer_reader_thread(void* arg) {
 			}
 		}
 		pthread_mutex_unlock(&mutex);
-		sleep(10);
+		sleep(1);
 	}
 
 }
@@ -230,7 +231,7 @@ void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 	q_obj.config.rwnd = get_window_size();
 	q_obj.config.ts = ts;
 	strcpy(q_obj.buf, "Hello!!");
-	printf("Sending ack to server with new seq num %d\n", q_obj.config.seq);
+	printf("[ACK]Sending ack to server with new seq num %d\n", q_obj.config.seq);
 	send_udp_data(sockfd, (SA*) &cliaddr, clilen, &q_obj);
 }
 int get_window_size() {

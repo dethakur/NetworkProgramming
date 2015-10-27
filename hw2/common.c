@@ -65,10 +65,10 @@ void fill_addr_contents(iAddr *addr) {
 	count = 0;
 	for (ifihead = ifi = Get_ifi_info_plus(AF_INET, 0); ifi != NULL; ifi
 			= ifi->ifi_next) {
-		printf("%s: ", ifi->ifi_name);
+//		printf("%s: ", ifi->ifi_name);
 		if ((sa = ifi->ifi_addr) != NULL) {
 			strcpy(addr[count].ip_addr, Sock_ntop_host(sa, sizeof(*sa)));
-			//			printf("IP Addr = %s\n",Sock_ntop_host(sa, sizeof(*sa)));
+			printf("IP Addr = %s\n",Sock_ntop_host(sa, sizeof(*sa)));
 		}
 		if ((sa = ifi->ifi_ntmaddr) != NULL) {
 			strcpy(addr[count].mask, Sock_ntop_host(sa, sizeof(*sa)));
