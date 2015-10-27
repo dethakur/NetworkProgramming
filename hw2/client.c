@@ -37,19 +37,19 @@ int main(int argc, char** argv) {
 	char server_ip[MAXLINE];
 
 	int ip_addr_count = get_addr_count();
-		iAddr addr[ip_addr_count];
-		fill_addr_contents((iAddr*) &addr);
-		disp_addr_contents((iAddr*) &addr, ip_addr_count);
+	iAddr addr[ip_addr_count];
+	fill_addr_contents((iAddr*) &addr);
+	disp_addr_contents((iAddr*) &addr, ip_addr_count);
 
 	//This is the Server IP that has to be connected.
 	strcpy(server_ip, "130.245.1.58");
 
 	int index = check_addr_local(server_ip, addr, ip_addr_count);
-		if (index != 0) {
-			printf("[Client] Server IP = %s is local to "
-					"CLient IP = %s with mask = %s\n", server_ip,
-					addr[index].ip_addr, addr[index].mask);
-		}
+	if (index != 0) {
+		printf("[Client] Server IP = %s is local to "
+				"CLient IP = %s with mask = %s\n", server_ip,
+				addr[index].ip_addr, addr[index].mask);
+	}
 
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 	long *ptr;
 	int new_port_number = strtol(q_obj.buf, ptr, 10);
 
-	create_new_connection(new_port_number,server_ip);
+	create_new_connection(new_port_number, server_ip);
 	printf("[Client]Done creating connection with new server");
 
 	close(sockfd);
@@ -146,7 +146,7 @@ int drop_packet(double probability, int max_seed) {
 	return probability > r;
 }
 
-void create_new_connection(int port_num,char* server_ip) {
+void create_new_connection(int port_num, char* server_ip) {
 	printf("New port number = %d\n", port_num);
 	int sockfd;
 	struct sockaddr_in servaddr;
@@ -194,9 +194,8 @@ void create_new_connection(int port_num,char* server_ip) {
 			}
 			//			printf("[Client]Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
 			update_expected_seq_num(&expected_seq_num);
-			send_ack_to_server(sockfd, q_obj.sock_addr,
-					sizeof(q_obj.sock_addr), q_obj.config.seq, q_obj.config.ts,
-					expected_seq_num);
+			send_ack_to_server(sockfd, q_obj.sock_addr, sizeof(q_obj.sock_addr),
+					q_obj.config.seq, q_obj.config.ts, expected_seq_num);
 
 			pthread_mutex_unlock(&mutex);
 		}
@@ -249,7 +248,8 @@ void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 	q_obj.config.rwnd = get_window_size();
 	q_obj.config.ts = ts;
 	strcpy(q_obj.buf, "Hello!!");
-	printf("[ACK]Sending ack to server with new seq num %d\n", q_obj.config.seq);
+	printf("[ACK]Sending ack to server with new seq num %d\n",
+			q_obj.config.seq);
 	send_udp_data(sockfd, (SA*) &cliaddr, clilen, &q_obj);
 }
 int get_window_size() {
