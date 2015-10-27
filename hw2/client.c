@@ -10,7 +10,7 @@
 void* buffer_reader_thread(void*);
 void push_data_to_buffer(char*, int, int);
 int get_window_size();
-void create_new_connection(int);
+void create_new_connection(int, char*);
 void send_ack_to_server(int, struct sockaddr_in, socklen_t, int, uint32_t,
 		int expected_seq);
 
@@ -34,6 +34,23 @@ int main(int argc, char** argv) {
 	struct sockaddr_in servaddr, cliaddr, sock_addr;
 	query_obj q_obj;
 
+	char server_ip[MAXLINE];
+
+	int ip_addr_count = get_addr_count();
+		iAddr addr[ip_addr_count];
+		fill_addr_contents((iAddr*) &addr);
+		disp_addr_contents((iAddr*) &addr, ip_addr_count);
+
+	//This is the Server IP that has to be connected.
+	strcpy(server_ip, "130.245.1.58");
+
+	int index = check_addr_local(server_ip, addr, ip_addr_count);
+		if (index != 0) {
+			printf("[Client] Server IP = %s is local to "
+					"CLient IP = %s with mask = %s\n", server_ip,
+					addr[index].ip_addr, addr[index].mask);
+		}
+
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(5589);
@@ -42,7 +59,7 @@ int main(int argc, char** argv) {
 	cliaddr.sin_family = AF_INET;
 	cliaddr.sin_port = htons(0);
 
-	inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
+	inet_pton(AF_INET, server_ip, &servaddr.sin_addr);
 
 	//	sockfd = socket(AF_INET,SOCK_DGRAM,0);
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -96,7 +113,7 @@ int main(int argc, char** argv) {
 	long *ptr;
 	int new_port_number = strtol(q_obj.buf, ptr, 10);
 
-	create_new_connection(new_port_number);
+	create_new_connection(new_port_number,server_ip);
 	printf("[Client]Done creating connection with new server");
 
 	close(sockfd);
@@ -129,7 +146,7 @@ int drop_packet(double probability, int max_seed) {
 	return probability > r;
 }
 
-void create_new_connection(int port_num) {
+void create_new_connection(int port_num,char* server_ip) {
 	printf("New port number = %d\n", port_num);
 	int sockfd;
 	struct sockaddr_in servaddr;
@@ -138,6 +155,7 @@ void create_new_connection(int port_num) {
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port_num);
+	Inet_pton(AF_INET, server_ip, &servaddr.sin_addr);
 
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	query_obj q_obj;

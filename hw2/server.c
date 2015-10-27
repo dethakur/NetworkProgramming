@@ -39,45 +39,74 @@ static void sig_alrm(int signo) {
 
 int main(int argc, char* argv[]) {
 
-	int count = get_addr_count();
-	int sockfd;
-	struct sockaddr_in servaddr, cliaddr;
+	int ip_addr_count = get_addr_count();
+	iAddr addr[ip_addr_count];
+	fill_addr_contents((iAddr*) &addr);
+	disp_addr_contents((iAddr*) &addr, ip_addr_count);
 
-	sockfd = Socket(AF_INET, SOCK_DGRAM, 0);
+	int i = 0;
 
-	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(5589);
-
-	Bind(sockfd, (SA*) &servaddr, sizeof(servaddr));
-
-	fd_set rset;
-	char buf[MAXLINE];
+	fd_set rset_arr;
 	query_obj q_obj;
+	int sockfd_arr[ip_addr_count];
+
+	struct sockaddr_in servaddr[ip_addr_count], cliaddr[ip_addr_count];
+
+	for (i = 0; i < ip_addr_count; i++) {
+		bzero(&servaddr[i], sizeof(struct sockaddr_in));
+		sockfd_arr[i] = Socket(AF_INET, SOCK_DGRAM, 0);
+		servaddr[i].sin_family = AF_INET;
+		servaddr[i].sin_port = htons(5589);
+		Inet_pton(AF_INET, addr[i].ip_addr, &servaddr[i].sin_addr);
+
+		Bind(sockfd_arr[i], (SA*) &servaddr[i], sizeof(struct sockaddr_in));
+	}
+
 	while (1) {
-		FD_ZERO(&rset);
-		FD_SET(sockfd, &rset);
-		int maxfd1 = sockfd + 1;
-//		printf("[Parent][Server]Waiting for Connection! \n");
-		Select(maxfd1, &rset, NULL, NULL, NULL);
-		if (FD_ISSET(sockfd, &rset)) {
-//			printf("[Parent][Server]Select got broken! which means socket got interrupted \n");
-			struct sockaddr_in cliaddr;
-			bzero(&q_obj, sizeof(q_obj));
-			recv_udp_data(sockfd, NULL, 0, &q_obj);
-			cliaddr = q_obj.sock_addr;
+		int i = 0;
+		int maxVal = -1;
+		FD_ZERO(&rset_arr);
+		for (i = 0; i < ip_addr_count; i++) {
+			FD_SET(sockfd_arr[i], &rset_arr);
+			maxVal = max(maxVal, sockfd_arr[i]);
+		}
+		maxVal = maxVal + 1;
+		Select(maxVal, &rset_arr, NULL, NULL, NULL);
+		for (i = 0; i < ip_addr_count; i++) {
+			if (FD_ISSET(sockfd_arr[i], &rset_arr)) {
+				struct sockaddr_in cliaddr;
 
-			bzero(&q_obj, sizeof(q_obj));
-			q_obj.config.type = ack;
-			send_udp_data(sockfd, (SA*) &cliaddr, sizeof(cliaddr), &q_obj);
+				char clientIP[MAXLINE];
 
-			pid_t pid = fork();
-			if (pid == 0) {
-				udp_reliable_transfer(sockfd, cliaddr);
-				exit(0);
+				bzero(clientIP, sizeof(clientIP));
+				bzero(&q_obj, sizeof(q_obj));
+				recv_udp_data(sockfd_arr[i], NULL, 0, &q_obj);
+				cliaddr = q_obj.sock_addr;
+
+				Inet_ntop(AF_INET, &cliaddr.sin_addr, clientIP,
+						sizeof(clientIP));
+				printf("[Server] Request received from client IP = %s\n",
+						clientIP);
+				int index = check_addr_local(clientIP, addr, ip_addr_count);
+				if (index != 0) {
+					printf("[Server] Client IP = %s is LOCAL to "
+							"Server IP = %s with mask = %s\n", clientIP,
+							addr[index].ip_addr, addr[index].mask);
+				}
+
+				bzero(&q_obj, sizeof(q_obj));
+				q_obj.config.type = ack;
+				send_udp_data(sockfd_arr[i], (SA*) &cliaddr, sizeof(cliaddr),
+						&q_obj);
+
+				pid_t pid = fork();
+				if (pid == 0) {
+					udp_reliable_transfer(sockfd_arr[i], cliaddr);
+					exit(0);
+				}
 			}
 		}
+
 	}
 	return 0;
 
@@ -161,7 +190,7 @@ void send_file_data(th_config* config) {
 			(config->rttinit_ptr) = 3;
 		}
 		//This loop is basically to send packets together.
-		for (packet_count = 0; packet_count < min(cwnd,rwnd); packet_count++) {
+		for (packet_count = 0; packet_count < min(cwnd, rwnd); packet_count++) {
 			bzero(&q_obj, sizeof(q_obj));
 
 			if (config->last_unacked_seq != -1) {
@@ -225,19 +254,19 @@ void receive_ack(th_config *config, int seq_no) {
 
 	Signal(SIGALRM, sig_alrm);
 
-
 	ssize_t n;
 	//Kaushik : Check this variable. This seems to be too small. If i set timeout to this value , it keeps throwing timeouts.
 	int alarm_secs = rtt_start(rttinfo_ptr);
 	struct itimerval timer;
 	timer.it_value.tv_sec = config->rttinit_ptr;
 	timer.it_value.tv_usec = 0;
-	setitimer (ITIMER_REAL, &timer, NULL);
+	setitimer(ITIMER_REAL, &timer, NULL);
 	do {
 		if (sigsetjmp(jmpbuf, 1) != 0 || fast_retransmit == 3) {
-			if(fast_retransmit == 3){
-				printf("[Fast][Retransmit]Fast retransmit == %d\n",fast_retransmit);
-			}else{
+			if (fast_retransmit == 3) {
+				printf("[Fast][Retransmit]Fast retransmit == %d\n",
+						fast_retransmit);
+			} else {
 				printf("Timeout happened\n");
 			}
 
@@ -248,9 +277,10 @@ void receive_ack(th_config *config, int seq_no) {
 				return;
 			}
 
-			config->ssthresh = (int)(config->cwnd/2);
+			config->ssthresh = (int) (config->cwnd / 2);
 			config->cwnd = 1;
-			printf("[Update] Cwnd set to %d and ssthresh set to %d ",config->cwnd,config->ssthresh);
+			printf("[Update] Cwnd set to %d and ssthresh set to %d ",
+					config->cwnd, config->ssthresh);
 			config->last_unacked_seq = prev_seq_num;
 			(config->rttinit_ptr) = 0;
 			return;
@@ -263,22 +293,23 @@ void receive_ack(th_config *config, int seq_no) {
 //		printf("[ACK]Window Size = %d and Client wants seq no = %d , Expected Seq No = %d\n", q_obj.config.rwnd,
 //				q_obj.config.seq,expected_seq_num);
 
-		if(config->ssthresh != -1 && config->cwnd >= config->ssthresh){
+		if (config->ssthresh != -1 && config->cwnd >= config->ssthresh) {
 			config->cwnd += 1;
-		}else{
-			config->cwnd *=2;
+		} else {
+			config->cwnd *= 2;
 		}
-		printf("[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",q_obj.config.seq,config->cwnd,q_obj.config.rwnd);
+		printf(
+				"[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",
+				q_obj.config.seq, config->cwnd, q_obj.config.rwnd);
 
 		config->rwnd = q_obj.config.rwnd;
 		//Saving the last seq number received
-		if(prev_seq_num == q_obj.config.seq){
+		if (prev_seq_num == q_obj.config.seq) {
 			fast_retransmit++;
-		}else{
+		} else {
 			prev_seq_num = q_obj.config.seq;
 			fast_retransmit = 0;
 		}
-
 
 	} while (n < sizeof(struct udp_data) || q_obj.config.seq != expected_seq_num);
 
