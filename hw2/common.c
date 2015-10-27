@@ -32,10 +32,10 @@ void send_udp_data(int sockfd, void* servaddr, socklen_t servlen,
 	Sendmsg(sockfd, &obj->msgdata, 0);
 }
 
-void recv_udp_data(int sockfd, void* servaddr, socklen_t servlen,
+int recv_udp_data(int sockfd, void* servaddr, socklen_t servlen,
 		struct query_obj* obj) {
 	init_query_obj(servaddr, servlen, obj);
-	Recvmsg(sockfd, &obj->msgdata, 0);
+	return Recvmsg(sockfd, &obj->msgdata, 0);
 }
 int get_addr_count() {
 	struct ifi_info *ifi, *ifihead;
@@ -63,7 +63,7 @@ void disp_addr_contents(iAddr *addr, int count) {
 				addr[i].mask);
 	}
 }
-//Has to be corrected to longest prefix match
+
 int check_addr_local(char* address, iAddr* addr, int ip_addr_count) {
 	int i = 0;
 	struct sockaddr_in sock1;
