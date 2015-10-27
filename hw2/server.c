@@ -16,6 +16,8 @@ struct thread_config {
 	int last_unacked_seq;
 	struct rtt_info rttinfo_ptr;
 	int rttinit_ptr;
+	int cwnd;
+	int ssthresh;
 };
 
 typedef struct thread_config th_config;
@@ -139,29 +141,32 @@ void udp_reliable_transfer(int sockfd, struct sockaddr_in cliaddr) {
 
 }
 void send_file_data(th_config* config) {
-	printf("Inside send file data\n");
+//	printf("Inside send file data\n");
 	int seq_num = -1;
 	query_obj q_obj;
 	int sleep_time = 1;
 
 	config->last_unacked_seq = -1;
+	config->ssthresh = -1;
 	config->rwnd = 1; //Start by sending one packet.
-	printf("Time to go in a while loop \n");
+	config->cwnd = 1; //Slow Start
+//	printf("Time to go in a while loop \n");
 
 	while (1) {
 		int rwnd = config->rwnd;
+		int cwnd = config->cwnd;
 		int packet_count = 0;
 		if ((config->rttinit_ptr) == 0) {
 			rtt_init(&config->rttinfo_ptr);
 			(config->rttinit_ptr) = 3;
 		}
 		//This loop is basically to send packets together.
-		for (packet_count = 0; packet_count < rwnd; packet_count++) {
+		for (packet_count = 0; packet_count < min(cwnd,rwnd); packet_count++) {
 			bzero(&q_obj, sizeof(q_obj));
 
 			if (config->last_unacked_seq != -1) {
 				// seq num config->last_unacked_seq has not been ack'ed, so re-transmit.
-				printf("[Send]Sender retransmitting packet with seq_num %d\n",
+				printf("[Send]Sender retransmitting packet with Seq No =  %d\n",
 						config->last_unacked_seq);
 				q_obj.config.seq = config->last_unacked_seq;
 				seq_num = config->last_unacked_seq;
@@ -175,9 +180,9 @@ void send_file_data(th_config* config) {
 			q_obj.config.type = data;
 			strcpy(q_obj.buf, "success");
 			sleep_time = 1;
-			printf(
-					"[Send][Data] Data sent to server with rwnd size = %d and Seq num %d\n",
-					config->rwnd, q_obj.config.seq);
+//			printf(
+//					"[Send][Data] Data sent to server with rwnd size = %d and Seq num %d\n",
+//					config->rwnd, q_obj.config.seq);
 
 			rtt_newpack(&config->rttinfo_ptr);
 
@@ -188,7 +193,7 @@ void send_file_data(th_config* config) {
 		if (config->rwnd == 0) {
 			q_obj.config.type = ping;
 			sleep_time = 1;
-			printf("[Send][Ping] Data sent to server with rwnd size = %d\n",
+			printf("[Send][Ping] Sending Ping to the Client = %d\n",
 					config->rwnd);
 			q_obj.config.seq = seq_num;
 
@@ -229,15 +234,23 @@ void receive_ack(th_config *config, int seq_no) {
 	timer.it_value.tv_usec = 0;
 	setitimer (ITIMER_REAL, &timer, NULL);
 	do {
-		if (sigsetjmp(jmpbuf, 1) != 0 || fast_retransmit == 2) {
-			printf("[Fast][Retransmit]Fast retransmit == %d\n",fast_retransmit);
-			printf("Timeout happened\n");
+		if (sigsetjmp(jmpbuf, 1) != 0 || fast_retransmit == 3) {
+			if(fast_retransmit == 3){
+				printf("[Fast][Retransmit]Fast retransmit == %d\n",fast_retransmit);
+			}else{
+				printf("Timeout happened\n");
+			}
+
 			if (rtt_timeout(rttinfo_ptr) < 0) {
 				printf("no response from peer, giving up\n");
 				(config->rttinit_ptr) = 0;
 				errno = ETIMEDOUT;
 				return;
 			}
+
+			config->ssthresh = (int)(config->cwnd/2);
+			config->cwnd = 1;
+			printf("[Update] Cwnd set to %d and ssthresh set to %d ",config->cwnd,config->ssthresh);
 			config->last_unacked_seq = prev_seq_num;
 			(config->rttinit_ptr) = 0;
 			return;
@@ -247,8 +260,15 @@ void receive_ack(th_config *config, int seq_no) {
 
 		n = recv_udp_data(config->sockfd, (SA*) &config->cliaddr,
 				config->clilen, &q_obj);
-		printf("[ACK]Window Size = %d and Client wants seq no = %d , Expected Seq No = %d\n", q_obj.config.rwnd,
-				q_obj.config.seq,expected_seq_num);
+//		printf("[ACK]Window Size = %d and Client wants seq no = %d , Expected Seq No = %d\n", q_obj.config.rwnd,
+//				q_obj.config.seq,expected_seq_num);
+
+		if(config->ssthresh != -1 && config->cwnd >= config->ssthresh){
+			config->cwnd += 1;
+		}else{
+			config->cwnd *=2;
+		}
+		printf("[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",q_obj.config.seq,config->cwnd,q_obj.config.rwnd);
 
 		config->rwnd = q_obj.config.rwnd;
 		//Saving the last seq number received

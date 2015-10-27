@@ -5,7 +5,7 @@
 #include "common.h"
 #include <string.h>
 
-#define RWND_SIZE 5
+#define RWND_SIZE 100
 //void dg_cli_new(int,SA*,socklen_t);
 void* buffer_reader_thread(void*);
 void push_data_to_buffer(char*, int, int);
@@ -159,7 +159,7 @@ void create_new_connection(int port_num) {
 			bzero(&q_obj, sizeof(query_obj));
 			recv_udp_data(sockfd, NULL, 0, &q_obj);
 
-			if (drop_packet(0.5, max_seed)) {
+			if (drop_packet(0.1, max_seed)) {
 				printf("[DROP]Simulating loss of datagram with seq num %d\n",
 						q_obj.config.seq);
 				continue;
