@@ -8,6 +8,12 @@
 #include "./rtt.c"
 #include  <signal.h>
 
+struct server_config {
+	int port_num;
+	int rwnd;
+	char file_name[MAXLINE];
+};
+
 struct thread_config {
 	struct sockaddr_in cliaddr;
 	socklen_t clilen;
@@ -17,6 +23,8 @@ struct thread_config {
 	struct rtt_info rttinfo_ptr;
 	int rttinit_ptr;
 	int cwnd;
+	int isEOF;
+	int last_pack_seq_no;
 	int ssthresh;
 };
 
@@ -37,7 +45,27 @@ static void sig_alrm(int signo) {
 	siglongjmp(jmpbuf, 1);
 }
 
+struct server_config serv_config;
+
 int main(int argc, char* argv[]) {
+
+	//Reading config from server.in
+	FILE* fp = fopen("server.in", "r");
+	if (fp == NULL) {
+		printf("Cannot open server.in file in READ mode! \n");
+		exit(0);
+	}
+	fscanf(fp, "%d", &serv_config.port_num);
+	fscanf(fp, "%d", &serv_config.rwnd);
+
+	log_line_seperator();
+	printf("Configuration read from Server.in file \n");
+	printf("Port Number read from Server.in = %d\n", serv_config.port_num);
+	printf("Sliding Window read from Server.in = %d\n", serv_config.rwnd);
+	log_line_seperator();
+	fclose(fp);
+
+	//End of code to read configuration.
 
 	int ip_addr_count = get_addr_count();
 	iAddr addr[ip_addr_count];
@@ -56,9 +84,8 @@ int main(int argc, char* argv[]) {
 		bzero(&servaddr[i], sizeof(struct sockaddr_in));
 		sockfd_arr[i] = Socket(AF_INET, SOCK_DGRAM, 0);
 		servaddr[i].sin_family = AF_INET;
-		servaddr[i].sin_port = htons(5589);
+		servaddr[i].sin_port = htons(serv_config.port_num);
 		Inet_pton(AF_INET, addr[i].ip_addr, &servaddr[i].sin_addr);
-
 		Bind(sockfd_arr[i], (SA*) &servaddr[i], sizeof(struct sockaddr_in));
 	}
 
@@ -85,8 +112,10 @@ int main(int argc, char* argv[]) {
 
 				Inet_ntop(AF_INET, &cliaddr.sin_addr, clientIP,
 						sizeof(clientIP));
-				printf("[Server] Request received from client IP = %s\n",
-						clientIP);
+				printf(
+						"[Server] Request received from client IP = %s\n for file_name = %s\n",
+						clientIP, q_obj.buf);
+				strcpy(serv_config.file_name, q_obj.buf);
 				int index = check_addr_local(clientIP, addr, ip_addr_count);
 				if (index != 0) {
 					printf("[Server] Client IP = %s is LOCAL to "
@@ -102,6 +131,8 @@ int main(int argc, char* argv[]) {
 				pid_t pid = fork();
 				if (pid == 0) {
 					udp_reliable_transfer(sockfd_arr[i], cliaddr);
+					printf(
+							"[Server] File transfer successful. Now child ends!\n");
 					exit(0);
 				}
 			}
@@ -176,42 +207,76 @@ void send_file_data(th_config* config) {
 	int sleep_time = 1;
 
 	config->last_unacked_seq = -1;
+	config->last_pack_seq_no = -1;
 	config->ssthresh = -1;
-	config->rwnd = 1; //Start by sending one packet.
+	config->rwnd = serv_config.rwnd; //Start by sending one packet.
 	config->cwnd = 1; //Slow Start
 //	printf("Time to go in a while loop \n");
-
+	printf("File data to be transferred = %s\n", serv_config.file_name);
+	FILE* fp = fopen(serv_config.file_name, "r");
+//	int is_eof = 0;
 	while (1) {
 		int rwnd = config->rwnd;
 		int cwnd = config->cwnd;
 		int packet_count = 0;
-		if ((config->rttinit_ptr) == 0) {
-			rtt_init(&config->rttinfo_ptr);
-			(config->rttinit_ptr) = 3;
-		}
+
 		//This loop is basically to send packets together.
 		for (packet_count = 0; packet_count < min(cwnd, rwnd); packet_count++) {
 			bzero(&q_obj, sizeof(q_obj));
+//			char data[MAXLINE];
 
+//			if ((seq_num > config->last_pack_seq_no || config->isEOF == 1)
+//					&& config->last_pack_seq_no != -1) {
+//				break;
+//			}
+
+			if (config->isEOF == 1) {
+				break;
+			}
 			if (config->last_unacked_seq != -1) {
 				// seq num config->last_unacked_seq has not been ack'ed, so re-transmit.
-				printf("[Send]Sender retransmitting packet with Seq No =  %d\n",
-						config->last_unacked_seq);
 				q_obj.config.seq = config->last_unacked_seq;
 				seq_num = config->last_unacked_seq;
+				//reset the file pointer
+				fclose(fp);
+				fp = fopen(serv_config.file_name, "r");
+				int count = 0;
+				while (count != q_obj.config.seq) {
+					fscanf(fp, "%s", &q_obj.buf);
+					count++;
+				}
+				fscanf(fp, "%s", &q_obj.buf);
+				printf("[Send]Sender retransmitting data = %s with"
+						" Seq No =  %d\n", q_obj.buf, config->last_unacked_seq);
 				config->last_unacked_seq = -1;
 			} else {
 				q_obj.config.ts = rtt_ts(&config->rttinfo_ptr);
 				seq_num += 1;
 				q_obj.config.seq = seq_num;
+				if (fscanf(fp, "%s", &q_obj.buf) == EOF && config->last_pack_seq_no == -1) {
+					config->last_pack_seq_no = seq_num - 1;
+					printf("LAST  Seq No = %d\n", config->last_pack_seq_no);
+				}
 			}
 
-			q_obj.config.type = data;
-			strcpy(q_obj.buf, "success");
+			if (seq_num > config->last_pack_seq_no
+					&& config->last_pack_seq_no != -1) {
+				printf("[EOF] Setting data type to EOF\n");
+				q_obj.config.type = eof;
+			} else {
+				q_obj.config.type = data;
+			}
+
+			if ((config->rttinit_ptr) == 0) {
+				rtt_init(&config->rttinfo_ptr);
+				(config->rttinit_ptr) = 3;
+			}
+
+//			strcpy(q_obj.buf, data);
 			sleep_time = 1;
-//			printf(
-//					"[Send][Data] Data sent to server with rwnd size = %d and Seq num %d\n",
-//					config->rwnd, q_obj.config.seq);
+			printf(
+					"[Send][Data] Data = %s sent to server with rwnd size = %d and Seq num %d\n",
+					q_obj.buf, config->rwnd, q_obj.config.seq);
 
 			rtt_newpack(&config->rttinfo_ptr);
 
@@ -219,7 +284,7 @@ void send_file_data(th_config* config) {
 					config->clilen, &q_obj);
 
 		}
-		if (config->rwnd == 0) {
+		if (config->rwnd == 0 && config->isEOF != 1) {
 			q_obj.config.type = ping;
 			sleep_time = 1;
 			printf("[Send][Ping] Sending Ping to the Client = %d\n",
@@ -229,10 +294,14 @@ void send_file_data(th_config* config) {
 			send_udp_data(config->sockfd, (SA*) &config->cliaddr,
 					config->clilen, &q_obj);
 		}
+		if (config->isEOF == 1) {
+			break;
+		}
 		receive_ack(config, seq_num);
 
 		sleep(sleep_time);
 	}
+	fclose(fp);
 
 }
 
@@ -255,7 +324,8 @@ void receive_ack(th_config *config, int seq_no) {
 	Signal(SIGALRM, sig_alrm);
 
 	ssize_t n;
-	//Kaushik : Check this variable. This seems to be too small. If i set timeout to this value , it keeps throwing timeouts.
+	//Kaushik : Check this variable. This seems to be too small.
+	//If I set timeout to this value , it keeps throwing timeouts.
 	int alarm_secs = rtt_start(rttinfo_ptr);
 	struct itimerval timer;
 	timer.it_value.tv_sec = config->rttinit_ptr;
@@ -270,8 +340,10 @@ void receive_ack(th_config *config, int seq_no) {
 				printf("Timeout happened\n");
 			}
 
+			//Kaushik: Explain me what this do.
+			//What does giving up mean. Is this a case of Timeout ot something else
 			if (rtt_timeout(rttinfo_ptr) < 0) {
-				printf("no response from peer, giving up\n");
+				printf("No response from peer, giving up.\n");
 				(config->rttinit_ptr) = 0;
 				errno = ETIMEDOUT;
 				return;
@@ -279,7 +351,7 @@ void receive_ack(th_config *config, int seq_no) {
 
 			config->ssthresh = (int) (config->cwnd / 2);
 			config->cwnd = 1;
-			printf("[Update] Cwnd set to %d and ssthresh set to %d ",
+			printf("[Update] Cwnd set to %d and ssthresh set to %d \n",
 					config->cwnd, config->ssthresh);
 			config->last_unacked_seq = prev_seq_num;
 			(config->rttinit_ptr) = 0;
@@ -302,6 +374,12 @@ void receive_ack(th_config *config, int seq_no) {
 				"[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",
 				q_obj.config.seq, config->cwnd, q_obj.config.rwnd);
 
+		if (q_obj.config.seq >= config->last_pack_seq_no) {
+			printf("[ACK] Last packet ACK received. Marking EOF\n");
+			config->isEOF = 1;
+			break;
+		}
+
 		config->rwnd = q_obj.config.rwnd;
 		//Saving the last seq number received
 		if (prev_seq_num == q_obj.config.seq) {
@@ -316,4 +394,3 @@ void receive_ack(th_config *config, int seq_no) {
 	rtt_stop(rttinfo_ptr, rtt_ts(rttinfo_ptr) - q_obj.config.ts);
 	config->last_unacked_seq = -1;
 }
-

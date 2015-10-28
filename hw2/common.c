@@ -118,3 +118,6 @@ void fill_addr_contents(iAddr *addr) {
 	}
 	free_ifi_info_plus(ifihead);
 }
+void log_line_seperator(){
+	printf("\n********************************xxxxxxx********************************\n");
+}

@@ -5,7 +5,7 @@
 #include "common.h"
 #include <string.h>
 
-#define RWND_SIZE 100
+//#define cli_config.rwnd 100
 //void dg_cli_new(int,SA*,socklen_t);
 void* buffer_reader_thread(void*);
 void push_data_to_buffer(char*, int, int);
@@ -23,11 +23,50 @@ struct buffer {
 	struct buffer *next;
 };
 
-struct buffer text_buffer[RWND_SIZE];
+struct client_config {
+	char server_ip[MAXLINE];
+	int server_port;
+	char file_name[MAXLINE];
+	int rwnd;
+	int seed;
+	float probability;
+	int buffer_read_time;
+};
+
+struct buffer *text_buffer;
+int is_EOF = 0;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+struct client_config cli_config;
+
 int main(int argc, char** argv) {
+
+	FILE* fp = fopen("client.in","r");
+	if(fp == NULL){
+		printf("Cannot open client.in file in READ mode! \n");
+		exit(0);
+	}
+	fscanf(fp,"%s",&cli_config.server_ip);
+	fscanf(fp,"%d",&cli_config.server_port);
+	fscanf(fp,"%s",&cli_config.file_name);
+	fscanf(fp,"%d",&cli_config.rwnd);
+	fscanf(fp,"%d",&cli_config.seed);
+	fscanf(fp,"%f",&cli_config.probability);
+	fscanf(fp,"%d",&cli_config.buffer_read_time);
+	log_line_seperator();
+
+	text_buffer = (struct buffer*)malloc(sizeof(struct buffer)*cli_config.rwnd);
+
+	printf("Client Config Read from client.in file \n");
+	printf("Server IP = %s\n",cli_config.server_ip);
+	printf("Server PORT = %d\n",cli_config.server_port);
+	printf("File Name = %s\n",cli_config.file_name);
+	printf("Sliding Window Size = %d",cli_config.rwnd);
+	printf("Random generator seed = %f\n",cli_config.seed);
+	printf("Drop Probability = %f\n",cli_config.probability);
+	printf("mean u in milliseconds = %d\n",cli_config.buffer_read_time);
+	log_line_seperator();
 
 	int sockfd;
 	pthread_t tid;
@@ -42,7 +81,7 @@ int main(int argc, char** argv) {
 	disp_addr_contents((iAddr*) &addr, ip_addr_count);
 
 	//This is the Server IP that has to be connected.
-	strcpy(server_ip, "130.245.1.58");
+	strcpy(server_ip, cli_config.server_ip);
 
 	int index = check_addr_local(server_ip, addr, ip_addr_count);
 	if (index != 0) {
@@ -53,7 +92,7 @@ int main(int argc, char** argv) {
 
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(5589);
+	servaddr.sin_port = htons(cli_config.server_port);
 
 	bzero(&cliaddr, sizeof(cliaddr));
 	cliaddr.sin_family = AF_INET;
@@ -65,7 +104,7 @@ int main(int argc, char** argv) {
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	int i = 0;
-	for (i = 0; i < RWND_SIZE; i++) {
+	for (i = 0; i < cli_config.rwnd; i++) {
 		text_buffer[i].is_filled = -1;
 	}
 
@@ -76,7 +115,7 @@ int main(int argc, char** argv) {
 	bzero(&sock_addr, sizeof(sock_addr));
 	socklen_t len = sizeof(struct sockaddr_in);
 	getsockname(sockfd, (SA*) &sock_addr, &len);
-	//	printf("CLient port = %d\n",ntohs(sock_addr.sin_port));
+	printf("Client port = %d\n",ntohs(sock_addr.sin_port));
 
 	Connect(sockfd, (SA*) &servaddr, sizeof(servaddr));
 
@@ -85,12 +124,11 @@ int main(int argc, char** argv) {
 	socklen_t len2 = sizeof(peer_sock);
 
 	getpeername(sockfd, (SA*) &peer_sock, &len2);
-	//	printf("Server port = %d\n",ntohs(peer_sock.sin_port));
+	printf("Server port = %d\n",ntohs(peer_sock.sin_port));
 
 	char sendline[MAXLINE], recvline[MAXLINE];
 
-	strcpy(sendline, "file_name");
-	//	printf("Comes here !?!\n");
+	strcpy(sendline, cli_config.file_name);
 
 	Write(sockfd, sendline, strlen(sendline));
 
@@ -114,9 +152,13 @@ int main(int argc, char** argv) {
 	int new_port_number = strtol(q_obj.buf, ptr, 10);
 
 	create_new_connection(new_port_number, server_ip);
-	printf("[Client]Done creating connection with new server");
-
+	printf("[Client]Done creating connection with new server\n");
+	if(is_EOF == 1){
+		Pthread_join(tid,NULL);
+	}
 	close(sockfd);
+	fclose(fp);
+	free(text_buffer);
 	printf("Writing done!!\n");
 
 	return 0;
@@ -125,7 +167,7 @@ int main(int argc, char** argv) {
 
 int ispresent(int seq_num) {
 	int i = 0;
-	for (; i < RWND_SIZE; i++) {
+	for (; i < cli_config.rwnd; i++) {
 		if (text_buffer[i].is_filled != -1 && text_buffer[i].seq == seq_num) {
 			return 1;
 		}
@@ -165,7 +207,8 @@ void create_new_connection(int port_num, char* server_ip) {
 
 	fd_set rset;
 
-	int max_seed = 10;
+	//Kaushik: Confirm if this change is correct
+	int max_seed = cli_config.seed;//10;
 	srand(time(NULL));
 	while (1) {
 		FD_ZERO(&rset);
@@ -177,7 +220,8 @@ void create_new_connection(int port_num, char* server_ip) {
 			bzero(&q_obj, sizeof(query_obj));
 			recv_udp_data(sockfd, NULL, 0, &q_obj);
 
-			if (drop_packet(0.1, max_seed)) {
+			//Kaushik: Confirm if this change is correct. Changing probability
+			if (drop_packet(cli_config.probability, max_seed)) {
 				printf("[DROP]Simulating loss of datagram with seq num %d\n",
 						q_obj.config.seq);
 				continue;
@@ -186,11 +230,13 @@ void create_new_connection(int port_num, char* server_ip) {
 			pthread_mutex_lock(&mutex);
 
 			if (q_obj.config.type == data) {
-//				printf("[Data]Data Query Received with seq no = %d\n",q_obj.config.seq);
+				printf("[Data]Data Query Received with seq no = %d\n",q_obj.config.seq);
 				push_data_to_buffer((char*) &q_obj.buf, q_obj.config.seq,
 						expected_seq_num);
-			} else {
+			} else if(q_obj.config.type == ping) {
 				printf("[Ping]Ping Query Received\n");
+			}else if(q_obj.config.type == eof){
+				printf("[EOF]EOFFFFF Received \n");
 			}
 			//			printf("[Client]Select interrupted in client!!!. Data received = %s\n",q_obj.buf);
 			update_expected_seq_num(&expected_seq_num);
@@ -198,12 +244,20 @@ void create_new_connection(int port_num, char* server_ip) {
 					q_obj.config.seq, q_obj.config.ts, expected_seq_num);
 
 			pthread_mutex_unlock(&mutex);
+			if(q_obj.config.type == eof){
+				is_EOF = 1;
+				break;
+			}
 		}
 	}
 }
 
+//Kaushik: This has a problem. Packets are not in proper order.
+//do a git pull and run this command grep "FileData" output.txt
+//You will see seq no gets messed up if the number of lines in data > rwnd
+//This issue is intermittent though! It happened with buffer thread at sleep(1).
 void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
-	int i = seq_num % RWND_SIZE;
+	int i = seq_num % cli_config.rwnd;
 	if (text_buffer[i].is_filled == -1) {
 		if (seq_num != expected_seq_num) {
 //			printf(
@@ -227,16 +281,19 @@ void* buffer_reader_thread(void* arg) {
 	while (1) {
 		int i = 0;
 		pthread_mutex_lock(&mutex);
-		for (i = 0; i < RWND_SIZE; i++) {
+		for (i = 0; i < cli_config.rwnd; i++) {
 			if (text_buffer[i].is_filled == 1) {
-				printf("[Buffer][Thread] File Data = %s with seq = %d\n",
+				printf("[FileData] File Data = %s with seq = %d\n",
 						text_buffer[i].data, text_buffer[i].seq);
 				bzero(&text_buffer[i].data, sizeof(text_buffer[i].data));
 				text_buffer[i].is_filled = -1;
 			}
 		}
 		pthread_mutex_unlock(&mutex);
-		sleep(1);
+		if(is_EOF == 1)
+			break;
+//		sleep(1);
+		usleep(cli_config.buffer_read_time);
 	}
 
 }
@@ -247,7 +304,6 @@ void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 	q_obj.config.seq = expected_seq_num;
 	q_obj.config.rwnd = get_window_size();
 	q_obj.config.ts = ts;
-	strcpy(q_obj.buf, "Hello!!");
 	printf("[ACK]Sending ack to server with new seq num %d\n",
 			q_obj.config.seq);
 	send_udp_data(sockfd, (SA*) &cliaddr, clilen, &q_obj);
@@ -255,7 +311,7 @@ void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 int get_window_size() {
 	int count = 0;
 	int i = 0;
-	for (i = 0; i < RWND_SIZE; i++) {
+	for (i = 0; i < cli_config.rwnd; i++) {
 		if (text_buffer[i].is_filled == -1) {
 			count++;
 		}

@@ -1,0 +1,159 @@
+
+********************************xxxxxxx********************************
+Client Config Read from client.in file 
+Server IP = 130.245.1.181
+Server PORT = 5590
+File Name = test_file
+Sliding Window Size = 10Random generator seed = 0.000000
+Drop Probability = 0.100000
+mean u in milliseconds = 1000
+
+********************************xxxxxxx********************************
+IP address = 127.0.0.1 and Mask = 255.0.0.0
+IP address = 130.245.1.44 and Mask = 255.255.255.0
+IP address = 130.245.1.181 and Mask = 255.255.255.240
+[Client] Server IP = 130.245.1.181 is local to CLient IP = 130.245.1.181 with mask = 255.255.255.240
+Client port = 59450
+Server port = 5590
+Type of data = 0 = Port Number = 59451!!
+New port number = 59451
+[Data]Data Query Received with seq no = 0
+[ACK]Sending ack to server with new seq num 1
+[FileData] File Data = A with seq = 0
+[Data]Data Query Received with seq no = 1
+[ACK]Sending ack to server with new seq num 2
+[Data]Data Query Received with seq no = 2
+[ACK]Sending ack to server with new seq num 3
+[FileData] File Data = B with seq = 1
+[FileData] File Data = C with seq = 2
+[Data]Data Query Received with seq no = 3
+[ACK]Sending ack to server with new seq num 4
+[Data]Data Query Received with seq no = 4
+[ACK]Sending ack to server with new seq num 5
+[Data]Data Query Received with seq no = 5
+[ACK]Sending ack to server with new seq num 6
+[DROP]Simulating loss of datagram with seq num 6
+[Data]Data Query Received with seq no = 7
+[ACK]Sending ack to server with new seq num 6
+[Data]Data Query Received with seq no = 8
+[ACK]Sending ack to server with new seq num 6
+[Data]Data Query Received with seq no = 9
+[ACK]Sending ack to server with new seq num 6
+[Data]Data Query Received with seq no = 10
+[ACK]Sending ack to server with new seq num 6
+[FileData] File Data = D with seq = 3
+[FileData] File Data = E with seq = 4
+[FileData] File Data = F with seq = 5
+[Data]Data Query Received with seq no = 6
+[ACK]Sending ack to server with new seq num 7
+[FileData] File Data = G with seq = 6
+[DROP]Simulating loss of datagram with seq num 7
+[DROP]Simulating loss of datagram with seq num 8
+[Data]Data Query Received with seq no = 9
+[ACK]Sending ack to server with new seq num 7
+[Data]Data Query Received with seq no = 10
+[ACK]Sending ack to server with new seq num 7
+[Data]Data Query Received with seq no = 7
+[ACK]Sending ack to server with new seq num 8
+[FileData] File Data = H with seq = 7
+[Data]Data Query Received with seq no = 8
+[ACK]Sending ack to server with new seq num 9
+[Data]Data Query Received with seq no = 9
+[ACK]Sending ack to server with new seq num 10
+[FileData] File Data = I with seq = 8
+[FileData] File Data = J with seq = 9
+[DROP]Simulating loss of datagram with seq num 10
+[Data]Data Query Received with seq no = 11
+[ACK]Sending ack to server with new seq num 10
+[DROP]Simulating loss of datagram with seq num 12
+[Data]Data Query Received with seq no = 13
+[ACK]Sending ack to server with new seq num 10
+[Data]Data Query Received with seq no = 14
+[ACK]Sending ack to server with new seq num 10
+[DROP]Simulating loss of datagram with seq num 15
+[Data]Data Query Received with seq no = 16
+[ACK]Sending ack to server with new seq num 10
+[Data]Data Query Received with seq no = 17
+[ACK]Sending ack to server with new seq num 10
+[Data]Data Query Received with seq no = 10
+[ACK]Sending ack to server with new seq num 11
+[FileData] File Data = K with seq = 10
+[Data]Data Query Received with seq no = 11
+[ACK]Sending ack to server with new seq num 12
+[Data]Data Query Received with seq no = 12
+[ACK]Sending ack to server with new seq num 13
+[Data]Data Query Received with seq no = 13
+[ACK]Sending ack to server with new seq num 14
+[Data]Data Query Received with seq no = 14
+[ACK]Sending ack to server with new seq num 15
+[FileData] File Data = L with seq = 11
+[FileData] File Data = M with seq = 12
+[FileData] File Data = N with seq = 13
+[FileData] File Data = O with seq = 14
+[Data]Data Query Received with seq no = 15
+[ACK]Sending ack to server with new seq num 16
+[Data]Data Query Received with seq no = 16
+[ACK]Sending ack to server with new seq num 17
+[Data]Data Query Received with seq no = 17
+[ACK]Sending ack to server with new seq num 18
+[Data]Data Query Received with seq no = 18
+[ACK]Sending ack to server with new seq num 19
+[Data]Data Query Received with seq no = 19
+[ACK]Sending ack to server with new seq num 20
+[Data]Data Query Received with seq no = 20
+[ACK]Sending ack to server with new seq num 21
+[FileData] File Data = F with seq = 20
+[FileData] File Data = A with seq = 15
+[FileData] File Data = B with seq = 16
+[FileData] File Data = C with seq = 17
+[FileData] File Data = D with seq = 18
+[FileData] File Data = E with seq = 19
+[Data]Data Query Received with seq no = 21
+[ACK]Sending ack to server with new seq num 22
+[DROP]Simulating loss of datagram with seq num 22
+[Data]Data Query Received with seq no = 23
+[ACK]Sending ack to server with new seq num 22
+[Data]Data Query Received with seq no = 24
+[ACK]Sending ack to server with new seq num 22
+[FileData] File Data = G with seq = 21
+[Data]Data Query Received with seq no = 22
+[ACK]Sending ack to server with new seq num 23
+[FileData] File Data = H with seq = 22
+[DROP]Simulating loss of datagram with seq num 23
+[Data]Data Query Received with seq no = 24
+[ACK]Sending ack to server with new seq num 23
+[Data]Data Query Received with seq no = 23
+[ACK]Sending ack to server with new seq num 24
+[FileData] File Data = I with seq = 23
+[DROP]Simulating loss of datagram with seq num 24
+[Data]Data Query Received with seq no = 25
+[ACK]Sending ack to server with new seq num 24
+[Data]Data Query Received with seq no = 24
+[ACK]Sending ack to server with new seq num 25
+[FileData] File Data = J with seq = 24
+[DROP]Simulating loss of datagram with seq num 25
+[Data]Data Query Received with seq no = 26
+[ACK]Sending ack to server with new seq num 25
+[Data]Data Query Received with seq no = 25
+[ACK]Sending ack to server with new seq num 26
+[FileData] File Data = K with seq = 25
+[Data]Data Query Received with seq no = 26
+[ACK]Sending ack to server with new seq num 27
+[DROP]Simulating loss of datagram with seq num 27
+[FileData] File Data = L with seq = 26
+[DROP]Simulating loss of datagram with seq num 27
+[Data]Data Query Received with seq no = 0
+[ACK]Sending ack to server with new seq num 27
+[Data]Data Query Received with seq no = 27
+[ACK]Sending ack to server with new seq num 28
+[FileData] File Data = M with seq = 27
+[Data]Data Query Received with seq no = 28
+[ACK]Sending ack to server with new seq num 29
+[Data]Data Query Received with seq no = 29
+[ACK]Sending ack to server with new seq num 30
+[FileData] File Data = N with seq = 28
+[FileData] File Data = O with seq = 29
+[EOF]EOFFFFF Received 
+[ACK]Sending ack to server with new seq num 30
+[Client]Done creating connection with new server
+Writing done!!

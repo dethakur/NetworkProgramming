@@ -1,5 +1,5 @@
 typedef enum {
-	ack, ping, data
+	ack, ping, data, eof
 } data_type;
 
 //UDP Packet sent across along with data
@@ -34,4 +34,5 @@ int get_addr_count();
 void fill_addr_contents(iAddr*);
 void disp_addr_contents(iAddr*, int);
 int check_addr_local(char*, iAddr*, int);
+void log_line_seperator();
 
