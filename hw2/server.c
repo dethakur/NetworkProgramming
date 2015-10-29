@@ -245,7 +245,6 @@ void send_file_data(th_config* config) {
 					fscanf(fp, "%s", &q_obj.buf);
 					count++;
 				}
-				fscanf(fp, "%s", &q_obj.buf);
 				printf("[Send]Sender retransmitting data = %s with"
 						" Seq No =  %d\n", q_obj.buf, config->last_unacked_seq);
 				config->last_unacked_seq = -1;
@@ -299,7 +298,7 @@ void send_file_data(th_config* config) {
 		}
 		receive_ack(config, seq_num);
 
-		sleep(sleep_time);
+//		sleep(sleep_time);
 	}
 	fclose(fp);
 
@@ -327,8 +326,10 @@ void receive_ack(th_config *config, int seq_no) {
 	//Kaushik : Check this variable. This seems to be too small.
 	//If I set timeout to this value , it keeps throwing timeouts.
 	int alarm_secs = rtt_start(rttinfo_ptr);
+
 	struct itimerval timer;
-	timer.it_value.tv_sec = config->rttinit_ptr;
+	bzero(&timer,sizeof(timer));
+	timer.it_value.tv_sec = 1;
 	timer.it_value.tv_usec = 0;
 	setitimer(ITIMER_REAL, &timer, NULL);
 	do {
@@ -337,7 +338,12 @@ void receive_ack(th_config *config, int seq_no) {
 				printf("[Fast][Retransmit]Fast retransmit == %d\n",
 						fast_retransmit);
 			} else {
-				printf("Timeout happened\n");
+				printf("Timeout happened. Expected Seq %d\n", expected_seq_num);
+			}
+
+			if(prev_seq_num > config->last_pack_seq_no && config->last_pack_seq_no != -1){
+				config->isEOF = 1;
+				return;
 			}
 
 			//Kaushik: Explain me what this do.
@@ -374,7 +380,7 @@ void receive_ack(th_config *config, int seq_no) {
 				"[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",
 				q_obj.config.seq, config->cwnd, q_obj.config.rwnd);
 
-		if (q_obj.config.seq >= config->last_pack_seq_no) {
+		if (q_obj.config.seq >= config->last_pack_seq_no && config->last_pack_seq_no != -1) {
 			printf("[ACK] Last packet ACK received. Marking EOF\n");
 			config->isEOF = 1;
 			break;

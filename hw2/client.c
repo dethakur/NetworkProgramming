@@ -4,6 +4,7 @@
 #include "unpthread.h"
 #include "common.h"
 #include <string.h>
+#include <limits.h>
 
 //#define cli_config.rwnd 100
 //void dg_cli_new(int,SA*,socklen_t);
@@ -11,6 +12,7 @@ void* buffer_reader_thread(void*);
 void push_data_to_buffer(char*, int, int);
 int get_window_size();
 void create_new_connection(int, char*);
+int min_seq_num();
 void send_ack_to_server(int, struct sockaddr_in, socklen_t, int, uint32_t,
 		int expected_seq);
 
@@ -174,6 +176,20 @@ int ispresent(int seq_num) {
 	}
 	return 0;
 }
+int min_seq_num() {
+	int min_val = INT_MAX;
+	int i=0;
+	for (; i < cli_config.rwnd; i++) {
+		if (text_buffer[i].is_filled != -1) {
+			min_val = min(min_val,i);
+//			printf("Min seq _ num  = %d\n",min_val);
+		}
+	}
+//	if(min_val != INT_MAX)
+//		printf("Min seq _ num  = %d\n",min_val);
+
+	return min_val;
+}
 void update_expected_seq_num(int * expected_seq_num_ptr) {
 	int i = 0;
 	while (ispresent(*expected_seq_num_ptr) == 1) {
@@ -278,10 +294,11 @@ void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
 
 //This should read only continous packets
 void* buffer_reader_thread(void* arg) {
+
 	while (1) {
 		int i = 0;
 		pthread_mutex_lock(&mutex);
-		for (i = 0; i < cli_config.rwnd; i++) {
+		for (i = min_seq_num(); i < cli_config.rwnd; i++) {
 			if (text_buffer[i].is_filled == 1) {
 				printf("[FileData] File Data = %s with seq = %d\n",
 						text_buffer[i].data, text_buffer[i].seq);
@@ -292,11 +309,12 @@ void* buffer_reader_thread(void* arg) {
 		pthread_mutex_unlock(&mutex);
 		if(is_EOF == 1)
 			break;
-//		sleep(1);
 		usleep(cli_config.buffer_read_time);
 	}
 
 }
+
+
 void send_ack_to_server(int sockfd, struct sockaddr_in cliaddr,
 		socklen_t clilen, int seq, uint32_t ts, int expected_seq_num) {
 	query_obj q_obj;
