@@ -39,7 +39,6 @@ RTT_MAXNREXMT to 12 (instead of the current value 3)
 In function rtt_timeout, after doubling the RTO rtt_minmax is called. 
 Calculations are done on a millisecond scale
 
-***Drop Values***
 
 
 
