@@ -325,12 +325,11 @@ void receive_ack(th_config *config, int seq_no) {
 	ssize_t n;
 	//Kaushik : Check this variable. This seems to be too small.
 	//If I set timeout to this value , it keeps throwing timeouts.
-	int alarm_secs = rtt_start(rttinfo_ptr);
-
+	int alarm_mili_secs = rtt_start(rttinfo_ptr);
 	struct itimerval timer;
 	bzero(&timer,sizeof(timer));
-	timer.it_value.tv_sec = 1;
-	timer.it_value.tv_usec = 0;
+	timer.it_value.tv_sec = alarm_mili_secs/ 1000;
+//	timer.it_value.tv_usec = 1000000;
 	setitimer(ITIMER_REAL, &timer, NULL);
 	do {
 		if (sigsetjmp(jmpbuf, 1) != 0 || fast_retransmit == 3) {
@@ -396,7 +395,7 @@ void receive_ack(th_config *config, int seq_no) {
 		}
 
 	} while (n < sizeof(struct udp_data) || q_obj.config.seq != expected_seq_num);
-
+	bzero(&timer, sizeof(timer));
 	rtt_stop(rttinfo_ptr, rtt_ts(rttinfo_ptr) - q_obj.config.ts);
 	config->last_unacked_seq = -1;
 }

@@ -62,7 +62,7 @@ rtt_newpack(struct rtt_info *ptr)
 int
 rtt_start(struct rtt_info *ptr)
 {
-	return((int) (ptr->rtt_rto + 0.5))/ 1000;		/* round float to int */
+	return((int) (ptr->rtt_rto + 0.5)) ;		/* round float to int */
 		/* 4return value can be used as: alarm(rtt_start(&foo)) */
 }
 /* end rtt_ts */
