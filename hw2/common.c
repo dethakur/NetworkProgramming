@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include	"unpifiplus.h"
+#include <netdb.h>
+#include "unp.h"
 
 void init_query_obj(void* servaddr, socklen_t servlen, struct query_obj* obj) {
 	if (servaddr == NULL) {
@@ -65,6 +67,10 @@ void disp_addr_contents(iAddr *addr, int count) {
 }
 
 int check_addr_local(char* address, iAddr* addr, int ip_addr_count) {
+	if(strcmp(address,"127.0.0.1") == 0){
+		printf("Localhost. Address is Local!");
+		return 1;
+	}
 	int i = 0;
 	struct sockaddr_in sock1;
 	bzero(&sock1, sizeof(struct sockaddr_in));
