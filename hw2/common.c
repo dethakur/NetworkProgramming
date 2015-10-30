@@ -68,7 +68,7 @@ void disp_addr_contents(iAddr *addr, int count) {
 
 int check_addr_local(char* address, iAddr* addr, int ip_addr_count) {
 	if(strcmp(address,"127.0.0.1") == 0){
-		printf("Localhost. Address is Local!");
+		printf("Localhost. Address is Local!\n");
 		return 1;
 	}
 	int i = 0;
