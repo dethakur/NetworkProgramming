@@ -27,7 +27,7 @@ Server.c
 TIME_WAIT
 	If the client sends its last ACK and that is lost , the server waits for TIME_WAIT which is set to 3 seconds in server.c. If the server doesnt receive ACK for EOF packet , it exits.
 
-The content is printed in the logs as [FileData”	
+The content is printed in the logs as "FileData”	
 
 **** RTT values ****
 
