@@ -51,7 +51,7 @@ int get_host(char *ip_addr, char *hostname) {
 	inet_pton(AF_INET, copy, &myservaddr.s_addr);
 	struct hostent * hostentry = gethostbyaddr(&myservaddr.s_addr, 4, AF_INET);
 	strcpy(hostname, hostentry->h_name);
-	printf("Host name for %s\n", hostentry->h_name);
+//	printf("Host name for %s\n", hostentry->h_name);
 }
 int main(int argc, char** argv) {
 
@@ -245,6 +245,7 @@ int drop_packet(double probability, int max_seed) {
 
 void create_new_connection(int port_num, char* server_ip) {
 	printf("New port number = %d\n", port_num);
+	log_line_seperator();
 	int sockfd;
 	struct sockaddr_in servaddr;
 	int expected_seq_num = 0;
