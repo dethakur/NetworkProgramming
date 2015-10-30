@@ -1,7 +1,7 @@
 
 CC = gcc
 
-LIBS =  -lsocket\
+LIBS =  -lsocket -lnsl\
 	/home/courses/cse533/Stevens/unpv13e_solaris2.10/libunp.a
 
 FLAGS =  -g -O2

@@ -44,6 +44,15 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct client_config cli_config;
 
+int get_host(char *ip_addr, char *hostname) {
+	char copy[100];
+	strcpy(copy, ip_addr);
+    struct in_addr myservaddr;
+    inet_pton(AF_INET, copy, &myservaddr.s_addr);
+    struct hostent * hostentry = gethostbyaddr(&myservaddr.s_addr, 4, AF_INET);
+    strcpy(hostname, hostentry->h_name);
+    printf("Host name for %s\n", hostentry->h_name);
+}
 int main(int argc, char** argv) {
 
 	FILE* fp = fopen("client.in","r");
@@ -85,8 +94,16 @@ int main(int argc, char** argv) {
 	disp_addr_contents((iAddr*) &addr, ip_addr_count);
 
 	//This is the Server IP that has to be connected.
-
-	strcpy(server_ip, cli_config.server_ip);
+	char clihost[40];
+	char servhost[40];
+    get_host(cli_config.server_ip, servhost);
+    get_host(addr[1].ip_addr, clihost);
+	if(strcmp(clihost, servhost) == 0) {
+		printf("Both client and server are on the same host\n");
+		strcpy(server_ip, "127.0.0.1");
+	} else {
+		strcpy(server_ip, cli_config.server_ip);
+	}
 
 	int index = check_addr_local(server_ip, addr, ip_addr_count);
 	if (index != 0) {
