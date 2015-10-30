@@ -23,7 +23,15 @@ TIME_WAIT
 
 The content is printed in the logs as [FileData”	
 
+**** RTT values ****
 
-	
+rtt_stop uses integer arithmetic rather than floating point. 
+In the unprrt.h header file following are the constanst reset :
+RTT_RXTMIN to 1000 msec. (1 sec. instead of the current value 3 sec.)
+RTT_RXTMAX to 3000 msec. (3 sec. instead of the current value 60 sec.)
+RTT_MAXNREXMT to 12 (instead of the current value 3)
+
+In function rtt_timeout, after doubling the RTO rtt_minmax is called. 
+Calculations are done on a millisecond scale
 
 

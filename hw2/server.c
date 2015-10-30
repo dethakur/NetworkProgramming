@@ -254,7 +254,7 @@ void send_file_data(th_config* config) {
 				seq_num += 1;
 				q_obj.config.seq = seq_num;
 				if (fscanf(fp, "%s", &q_obj.buf) == EOF && config->last_pack_seq_no == -1) {
-					config->last_pack_seq_no = seq_num - 1;
+					config->last_pack_seq_no = seq_num;
 					printf("LAST  Seq No = %d\n", config->last_pack_seq_no);
 				}
 			}
@@ -264,6 +264,7 @@ void send_file_data(th_config* config) {
 				printf("[EOF] Setting data type to EOF\n");
 				q_obj.config.type = eof;
 				seq_num = config->last_pack_seq_no;
+				q_obj.config.seq = seq_num;
 			} else {
 				q_obj.config.type = data;
 			}
@@ -276,7 +277,7 @@ void send_file_data(th_config* config) {
 //			strcpy(q_obj.buf, data);
 			sleep_time = 1;
 			printf(
-					"[Send][Data] Data = %s sent to server with rwnd size = %d and Seq num %d\n",
+					"[Send][Data] Data = %s sent to client with rwnd size = %d and Seq num %d\n",
 					q_obj.buf, config->rwnd, q_obj.config.seq);
 
 			rtt_newpack(&config->rttinfo_ptr);
@@ -387,8 +388,8 @@ void receive_ack(th_config *config, int seq_no) {
 				"[Ack] Received from client with Seq No = %d. Cwnd updated to %d. Client Rwnd = %d\n",
 				q_obj.config.seq, config->cwnd, q_obj.config.rwnd);
 
-		if (q_obj.config.seq >= config->last_pack_seq_no && config->last_pack_seq_no != -1) {
-			printf("[ACK] Last packet ACK received. Marking EOF\n");
+		if (q_obj.config.seq > config->last_pack_seq_no && config->last_pack_seq_no != -1) {
+			printf("[ACK] Last packet ACK received. Marking EOF %d\n", config->last_pack_seq_no);
 			config->isEOF = 1;
 			break;
 		}
