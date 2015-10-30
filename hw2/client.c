@@ -1,4 +1,5 @@
 #include "unp.h"
+#include <netdb.h>
 #include "unpthread.h"
 #include <unistd.h>
 #include "unpthread.h"
@@ -15,6 +16,7 @@ void create_new_connection(int, char*);
 int min_seq_num();
 void send_ack_to_server(int, struct sockaddr_in, socklen_t, int, uint32_t,
 		int expected_seq);
+int same_host_name(char*,char*);
 
 //Link List of Buffers
 struct udp_data send_hdr, recv_hdr;
@@ -83,6 +85,7 @@ int main(int argc, char** argv) {
 	disp_addr_contents((iAddr*) &addr, ip_addr_count);
 
 	//This is the Server IP that has to be connected.
+
 	strcpy(server_ip, cli_config.server_ip);
 
 	int index = check_addr_local(server_ip, addr, ip_addr_count);
@@ -340,4 +343,18 @@ int get_window_size() {
 		}
 	}
 	return count;
+}
+int same_host_name(char* server_ip,char* client_ip){
+	struct in_addr cli_addr_val;
+	struct in_addr serv_addr_val;
+
+	Inet_pton(AF_INET,client_ip,&cli_addr_val.s_addr);
+	Inet_pton(AF_INET,server_ip,&serv_addr_val.s_addr);
+
+	struct hostent* cli_val;
+	struct hostent* serv_val;
+
+	cli_val = gethostbyaddr(&cli_addr_val.s_addr,4,AF_INET);
+	serv_val = gethostbyaddr(&serv_addr_val.s_addr,4,AF_INET);
+	return 0;
 }

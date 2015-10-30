@@ -14,17 +14,15 @@ IP address = 130.245.1.44 and Mask = 255.255.255.0
 IP address = 130.245.1.181 and Mask = 255.255.255.240
 Address is LOCAL
 [Client] Server IP = 130.245.1.44 is local to CLient IP = 130.245.1.44 with mask = 255.255.255.0
-Client port = 49701
+Client port = 49729
 Server port = 5511
-Type of data = 0 = Port Number = 49702!!
-New port number = 49702
+Type of data = 0 = Port Number = 49730!!
+New port number = 49730
+[DROP]Simulating loss of datagram with seq num 0
 [Data]Data Query Received with seq no = 0
 [ACK]Sending ack to server with new seq num 1
 [Data]Data Query Received with seq no = 1
 [ACK]Sending ack to server with new seq num 2
-[DROP]Simulating loss of datagram with seq num 2
-[FileData] File Data = B with seq = 1
-[FileData] File Data = A with seq = 0
 [Data]Data Query Received with seq no = 2
 [ACK]Sending ack to server with new seq num 3
 [Data]Data Query Received with seq no = 3
@@ -41,26 +39,40 @@ New port number = 49702
 [ACK]Sending ack to server with new seq num 9
 [Data]Data Query Received with seq no = 9
 [ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
+[DROP]Simulating loss of datagram with seq num 9
+[FileData] File Data =  with seq = 0
+[FileData] File Data = A with seq = 1
+[FileData] File Data = B with seq = 2
+[FileData] File Data = C with seq = 3
+[FileData] File Data = D with seq = 4
+[FileData] File Data = E with seq = 5
+[FileData] File Data = F with seq = 6
+[FileData] File Data = G with seq = 7
+[FileData] File Data = H with seq = 8
+[FileData] File Data = I with seq = 9
+[Ping]Ping Query Received
+[ACK]Sending ack to server with new seq num 10
 [Data]Data Query Received with seq no = 10
 [ACK]Sending ack to server with new seq num 11
 [Data]Data Query Received with seq no = 11
-[ACK]Sending ack to server with new seq num 12
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 12
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 12
-[DROP]Simulating loss of datagram with seq num 11
-[FileData] File Data = I with seq = 9
-[FileData] File Data = H with seq = 8
-[FileData] File Data = G with seq = 7
-[FileData] File Data = F with seq = 6
-[FileData] File Data = E with seq = 5
-[FileData] File Data = D with seq = 4
-[FileData] File Data = C with seq = 3
-[FileData] File Data = B with seq = 2
-[FileData] File Data = K with seq = 11
-[FileData] File Data = J with seq = 10
-[Ping]Ping Query Received
 [ACK]Sending ack to server with new seq num 12
 [Data]Data Query Received with seq no = 12
 [ACK]Sending ack to server with new seq num 13
@@ -68,28 +80,27 @@ New port number = 49702
 [ACK]Sending ack to server with new seq num 14
 [Data]Data Query Received with seq no = 14
 [ACK]Sending ack to server with new seq num 15
-[DROP]Simulating loss of datagram with seq num 15
-[Data]Data Query Received with seq no = 16
-[ACK]Sending ack to server with new seq num 15
-[DROP]Simulating loss of datagram with seq num 17
-[Data]Data Query Received with seq no = 18
-[ACK]Sending ack to server with new seq num 15
-[Data]Data Query Received with seq no = 19
-[ACK]Sending ack to server with new seq num 15
-[Data]Data Query Received with seq no = 20
-[ACK]Sending ack to server with new seq num 15
-[Data]Data Query Received with seq no = 21
-[ACK]Sending ack to server with new seq num 15
-[DROP]Simulating loss of datagram with seq num 15
-[FileData] File Data = N with seq = 14
-[FileData] File Data = M with seq = 13
-[FileData] File Data = L with seq = 12
 [Data]Data Query Received with seq no = 15
 [ACK]Sending ack to server with new seq num 16
+[DROP]Simulating loss of datagram with seq num 16
+[DROP]Simulating loss of datagram with seq num 17
+[Data]Data Query Received with seq no = 18
+[ACK]Sending ack to server with new seq num 16
+[Data]Data Query Received with seq no = 19
+[ACK]Sending ack to server with new seq num 16
+[FileData] File Data = J with seq = 10
+[FileData] File Data = K with seq = 11
+[FileData] File Data = L with seq = 12
+[FileData] File Data = M with seq = 13
+[FileData] File Data = N with seq = 14
+[FileData] File Data = O with seq = 15
 [Data]Data Query Received with seq no = 16
 [ACK]Sending ack to server with new seq num 17
 [Data]Data Query Received with seq no = 17
 [ACK]Sending ack to server with new seq num 18
+[DROP]Simulating loss of datagram with seq num 18
+[FileData] File Data = A with seq = 16
+[FileData] File Data = B with seq = 17
 [Data]Data Query Received with seq no = 18
 [ACK]Sending ack to server with new seq num 19
 [Data]Data Query Received with seq no = 19
@@ -104,29 +115,18 @@ New port number = 49702
 [ACK]Sending ack to server with new seq num 24
 [Data]Data Query Received with seq no = 24
 [ACK]Sending ack to server with new seq num 25
-[Ping]Ping Query Received
+[DROP]Simulating loss of datagram with seq num 25
+[Data]Data Query Received with seq no = 26
 [ACK]Sending ack to server with new seq num 25
-[Ping]Ping Query Received
+[Data]Data Query Received with seq no = 27
 [ACK]Sending ack to server with new seq num 25
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 25
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 25
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 25
-[DROP]Simulating loss of datagram with seq num 24
-[FileData] File Data = D with seq = 19
 [FileData] File Data = C with seq = 18
-[FileData] File Data = B with seq = 17
-[FileData] File Data = A with seq = 16
-[FileData] File Data = O with seq = 15
-[FileData] File Data = I with seq = 24
-[FileData] File Data = H with seq = 23
-[FileData] File Data = G with seq = 22
-[FileData] File Data = F with seq = 21
+[FileData] File Data = D with seq = 19
 [FileData] File Data = E with seq = 20
-[Ping]Ping Query Received
-[ACK]Sending ack to server with new seq num 25
+[FileData] File Data = F with seq = 21
+[FileData] File Data = G with seq = 22
+[FileData] File Data = H with seq = 23
+[FileData] File Data = I with seq = 24
 [Data]Data Query Received with seq no = 25
 [ACK]Sending ack to server with new seq num 26
 [Data]Data Query Received with seq no = 26
@@ -137,9 +137,14 @@ New port number = 49702
 [ACK]Sending ack to server with new seq num 29
 [Data]Data Query Received with seq no = 29
 [ACK]Sending ack to server with new seq num 30
-[DROP]Simulating loss of datagram with seq num 30
+[Data]Data Query Received with seq no = 30
+[ACK]Sending ack to server with new seq num 31
 [EOF]EOFFFFF Received 
-[ACK]Sending ack to server with new seq num 30
+[ACK]Sending ack to server with new seq num 31
 [Client]Done creating connection with new server
+[FileData] File Data = J with seq = 25
+[FileData] File Data = K with seq = 26
+[FileData] File Data = L with seq = 27
+[FileData] File Data = M with seq = 28
 [FileData] File Data = N with seq = 29
 Writing done!!
