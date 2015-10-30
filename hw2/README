@@ -7,16 +7,15 @@ Kaushik Devarajaiah
 Binding of server to listen to unicast Address - 
 	We have get_addr_count() method that gives the number of address in the particular machine. It uses Get_ifi_info_plus to achieve this. Once we get the number , we use a int array where we create Socket objects and bind to it and listen to it. Later we iterate through the array and use FD_SET to set the fd_set variable. We then listen on this variable to know if there was any connection request for the server.
 
-How RTT was calculated :
-
 ARQ mechanism - 
-
 The packets sent by the server has 4 flags. 1 flag for data , 1 for Ack , 1 for Ping and 1 to mark EOF. This is used as enum in the structure sent across client and server.
 Number of packets sent - This is min of cwnd and rwnd. cwnd is congestion window and rwnd is receiver window.
 Slow start - We start sending packets with cwnd set to 1. If there is a timeout we set ssthresh to cwnd/2 and change cwnd = 1. cwnd increases exponentially (2 times) till it reaches ssthresh , after which it increases linearly. These variables are stored in the structure thread_config.
+Congestion control - If timeout happens , cwnd is set to 1 and ssthresh is set cwnd/2. If cwnd is 1 and timeout occurs ssthresh is set to 0(1/2).
 Flow control - The client advertises its receiving window on avery acknowledgement. The reccMsg of server updates the rwnd variable. The rwnd variable is in thread_config structure.
 Persistent timer - If the rwnd = 0 , the server sends packet to the client with “ping” flag set. 
 Fast Retransmission - This happens if the client sends same ACK thrice. 
+
 
 	If duplicate ACKs are received by the server , we ignore it. If duplicate packet is received by client , it ignores it. Client saves the packet if the dont come in order.
 
@@ -39,5 +38,8 @@ RTT_MAXNREXMT to 12 (instead of the current value 3)
 
 In function rtt_timeout, after doubling the RTO rtt_minmax is called. 
 Calculations are done on a millisecond scale
+
+***Drop Values***
+
 
 
