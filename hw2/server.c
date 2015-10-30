@@ -326,7 +326,6 @@ void receive_ack(th_config *config, int seq_no) {
 	//Kaushik : Check this variable. This seems to be too small.
 	//If I set timeout to this value , it keeps throwing timeouts.
 	int alarm_mili_secs = rtt_start(rttinfo_ptr);
-
 	struct itimerval timer;
 	bzero(&timer,sizeof(timer));
 	timer.it_value.tv_sec = alarm_mili_secs/ 1000;
