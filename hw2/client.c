@@ -178,17 +178,22 @@ int ispresent(int seq_num) {
 }
 int min_seq_num() {
 	int min_val = INT_MAX;
+	int min_index = 0;
 	int i=0;
 	for (; i < cli_config.rwnd; i++) {
 		if (text_buffer[i].is_filled != -1) {
-			min_val = min(min_val,i);
+			int val = min(min_val,text_buffer[i].seq);
+			if(min_val > val){
+				min_index = i;
+				min_val = val;
+			}
 //			printf("Min seq _ num  = %d\n",min_val);
 		}
 	}
 //	if(min_val != INT_MAX)
 //		printf("Min seq _ num  = %d\n",min_val);
 
-	return min_val;
+	return min_index;
 }
 void update_expected_seq_num(int * expected_seq_num_ptr) {
 	int i = 0;
@@ -246,7 +251,7 @@ void create_new_connection(int port_num, char* server_ip) {
 			pthread_mutex_lock(&mutex);
 
 			if (q_obj.config.type == data) {
-				printf("[Data]Data Query Received with seq no = %d\n",q_obj.config.seq);
+				printf("[Data]Data = %s Received with seq no = %d\n",q_obj.buf,q_obj.config.seq);
 				push_data_to_buffer((char*) &q_obj.buf, q_obj.config.seq,
 						expected_seq_num);
 			} else if(q_obj.config.type == ping) {
