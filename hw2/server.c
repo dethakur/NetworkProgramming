@@ -259,7 +259,7 @@ void send_file_data(th_config* config) {
 				}
 			}
 
-			if (seq_num > config->last_pack_seq_no
+			if (seq_num >= config->last_pack_seq_no
 					&& config->last_pack_seq_no != -1) {
 				printf("[EOF] Setting data type to EOF\n");
 				q_obj.config.type = eof;
