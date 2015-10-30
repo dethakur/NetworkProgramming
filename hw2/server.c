@@ -245,6 +245,7 @@ void send_file_data(th_config* config) {
 					fscanf(fp, "%s", &q_obj.buf);
 					count++;
 				}
+				fscanf(fp, "%s", &q_obj.buf);
 				printf("[Send]Sender retransmitting data = %s with"
 						" Seq No =  %d\n", q_obj.buf, config->last_unacked_seq);
 				config->last_unacked_seq = -1;
@@ -262,6 +263,7 @@ void send_file_data(th_config* config) {
 					&& config->last_pack_seq_no != -1) {
 				printf("[EOF] Setting data type to EOF\n");
 				q_obj.config.type = eof;
+				seq_num = config->last_pack_seq_no;
 			} else {
 				q_obj.config.type = data;
 			}
@@ -316,7 +318,7 @@ void receive_ack(th_config *config, int seq_no) {
 	int expected_seq_num = seq_no + 1;
 
 	//This variable will save the seq number client wants.
-	int prev_seq_num = 0;
+	int prev_seq_num = -1;
 
 	int fast_retransmit = 0;
 
@@ -347,6 +349,7 @@ void receive_ack(th_config *config, int seq_no) {
 
 			//Kaushik: Explain me what this do.
 			//What does giving up mean. Is this a case of Timeout ot something else
+//			printf("Alarm milli seconds = %d",timer.it_value.tv_sec);
 			if (rtt_timeout(rttinfo_ptr) < 0) {
 				printf("No response from peer, giving up.\n");
 				(config->rttinit_ptr) = 0;
@@ -357,9 +360,13 @@ void receive_ack(th_config *config, int seq_no) {
 
 			config->ssthresh = (int) (config->cwnd / 2);
 			config->cwnd = 1;
-			printf("[Update] Cwnd set to %d and ssthresh set to %d \n",
-					config->cwnd, config->ssthresh);
-			config->last_unacked_seq = prev_seq_num;
+			if(prev_seq_num != -1){
+				config->last_unacked_seq = prev_seq_num;
+			}
+
+			printf("[Update] Cwnd set to %d and ssthresh set to %d and seq no = %d\n",
+								config->cwnd, config->ssthresh,config->last_unacked_seq);
+
 			(config->rttinit_ptr) = 0;
 			return;
 		}
