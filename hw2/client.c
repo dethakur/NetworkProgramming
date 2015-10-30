@@ -175,9 +175,9 @@ int main(int argc, char** argv) {
 
 	create_new_connection(new_port_number, server_ip);
 	printf("[Client]Done creating connection with new server\n");
-	if(is_EOF == 1){
-		Pthread_join(tid,NULL);
-	}
+
+	Pthread_join(tid,NULL);
+
 	close(sockfd);
 	fclose(fp);
 	free(text_buffer);
@@ -223,6 +223,7 @@ void update_expected_seq_num(int * expected_seq_num_ptr) {
 }
 
 int drop_packet(double probability, int max_seed) {
+	int randval = rand();
 	double r = (double) (rand() % max_seed) / max_seed;
 //	printf("probab = %f r = %f\n", probability, r);
 	//This has to be opposite. A probability of 1 means all packets have to be dropped.
@@ -248,9 +249,8 @@ void create_new_connection(int port_num, char* server_ip) {
 
 	fd_set rset;
 
-	//Kaushik: Confirm if this change is correct
-	int max_seed = cli_config.seed;//10;
-	srand(time(NULL));
+	int max_seed = cli_config.seed;
+	srand(max_seed);
 	while (1) {
 		FD_ZERO(&rset);
 		FD_SET(sockfd, &rset);
@@ -293,10 +293,6 @@ void create_new_connection(int port_num, char* server_ip) {
 	}
 }
 
-//Kaushik: This has a problem. Packets are not in proper order.
-//do a git pull and run this command grep "FileData" output.txt
-//You will see seq no gets messed up if the number of lines in data > rwnd
-//This issue is intermittent though! It happened with buffer thread at sleep(1).
 void push_data_to_buffer(char* send_buf, int seq_num, int expected_seq_num) {
 	int i = seq_num % cli_config.rwnd;
 	if (text_buffer[i].is_filled == -1) {
