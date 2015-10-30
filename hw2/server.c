@@ -351,6 +351,7 @@ void receive_ack(th_config *config, int seq_no) {
 				printf("No response from peer, giving up.\n");
 				(config->rttinit_ptr) = 0;
 				errno = ETIMEDOUT;
+				exit(0);
 				return;
 			}
 
