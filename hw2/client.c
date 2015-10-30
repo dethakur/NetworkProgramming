@@ -176,9 +176,20 @@ int main(int argc, char** argv) {
 
 	create_new_connection(new_port_number, server_ip);
 	printf("[Client]Done creating connection with new server\n");
-
+	is_EOF = 1;
 //	usleep(cli_config.buffer_read_time*3);
-	Pthread_join(tid, NULL);
+//	Pthread_join(tid, NULL);
+
+	i = 0;
+//			pthread_mutex_lock(&mutex);
+	for (i = min_seq_num(); i < cli_config.rwnd; i++) {
+		if (text_buffer[i].is_filled == 1) {
+			printf("[FileData] File Data = %s with seq = %d\n",
+					text_buffer[i].data, text_buffer[i].seq);
+			bzero(&text_buffer[i].data, sizeof(text_buffer[i].data));
+			text_buffer[i].is_filled = -1;
+		}
+	}
 
 	close(sockfd);
 	fclose(fp);
@@ -284,8 +295,8 @@ void create_new_connection(int port_num, char* server_ip) {
 			} else if (q_obj.config.type == eof) {
 //				eof_seq_no = q_obj.config.seq;
 				char buf[MAXLINE];
-				bzero(buf,sizeof(buf));
-				strcpy(buf,"End of File!");
+				bzero(buf, sizeof(buf));
+				strcpy(buf, "End of File!");
 				push_data_to_buffer(&buf, q_obj.config.seq, expected_seq_num);
 				printf("[EOF]EOFFFFF Received for seq no = %d\n",
 						q_obj.config.seq);
@@ -301,7 +312,6 @@ void create_new_connection(int port_num, char* server_ip) {
 			if (q_obj.config.type == eof
 					&& q_obj.config.seq + 1 == expected_seq_num) {
 				printf("EOFFF actuall happened ! , exiting\n");
-				is_EOF = 1;
 				break;
 			} else {
 //				printf("Expected = %d and got = %d\n", expected_seq_num,
