@@ -8,7 +8,7 @@
 #define IP_LEN 20
 
 typedef enum {
-	rrep, rreq, payload
+	rrep, rreq, payload_req,payload_resp
 } data_type;
 
 struct server_details {
@@ -17,12 +17,18 @@ struct server_details {
 	int index;
 };
 
+struct server_buf{
+	char ip[IP_LEN];
+	int count;
+};
+typedef struct server_buf server_buf;
+
 struct frame_header {
 	char src_ip[IP_LEN];
 	char dest_ip[IP_LEN];
 	int hop_count;
 	int bc_id;
-
+	long timeVal;
 	data_type type;
 }__attribute((packed));
 typedef struct frame_header frame_head;
@@ -46,6 +52,8 @@ struct routing_table {
 typedef struct routing_table routing_table;
 
 //void get_ip_address(char*,int*);
+void init_buffer(server_buf*,int);
+void push_data_to_buf(server_buf*,char*);
 void display_header(frame_head*);
 void display_mac_addr(char*);
 void init_routing_table(routing_table*);
@@ -57,4 +65,4 @@ int source_ip_cmp(char*,struct server_details*,int);
 int source_mac_cmp(char*,struct server_details*,int);
 int should_update_rt(routing_table*, frame_head*);
 int populate_server_details(struct server_details*);
-
+void populate_frame_header(char*,char*,int,int,data_type,frame_head*);

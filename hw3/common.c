@@ -4,16 +4,20 @@ void display_header(frame_head* head) {
 	printf("Src Ip = %s \t", head->src_ip);
 	printf("Dest Ip = %s \t", head->dest_ip);
 	printf("Hop count = %d \t", head->hop_count);
-	printf("BroadCast Id = %d \t", head->bc_id);
+//	printf("BroadCast Id = %d \t", head->bc_id);
 	if (head->type == rreq) {
-		printf("RREQ received\n");
+		printf("RREQ\n");
 	}
 	if (head->type == rrep) {
-		printf("RREP received\n");
+		printf("RREP\n");
 	}
-	if (head->type == payload) {
-		printf("Payload received\n");
+	if (head->type == payload_req) {
+		printf("Payload Request\n");
 	}
+	if (head->type == payload_resp) {
+		printf("Payload Response\n");
+	}
+
 }
 
 void display_mac_addr(char* mac_addr) {
@@ -58,22 +62,47 @@ void delete_table_entry(routing_table *table, int index) {
 	table->row[index].is_filled = 0;
 }
 
+void init_buffer(server_buf* buf, int count) {
+	int i = 0;
+	for (i = 0; i < count; i++) {
+		bzero(&buf[i], sizeof(buf[i]));
+		buf->count = 0;
+	}
+}
+
+void push_data_to_buf(server_buf* buf, char* ip) {
+	int i = 0;
+	for (i = 0; i < 100; i++) {
+		if (buf[i].count == 0) {
+			break;
+		}
+		if (strcmp(buf[i].ip, ip) == 0) {
+			break;
+		}
+	}
+	if (buf[i].count == 0) {
+		buf[i].count += 1;
+		strcpy(buf[i].ip, ip);
+	} else {
+		buf[i].count += 1;
+	}
+}
+
 void display_routing_table(routing_table* table) {
 	int i = 0;
 	printf("Displaying Routing Table----\n");
 	printf("Dest Ip\t\t\tHops\tTS\t\t\tNext Hop\t\t\tB ID\n");
 	for (i = 0; i < ROUTING_TABLE_SIZE; i++) {
 		if (table->row[i].is_filled != 0) {
-			printf("%s\t\t%d\t%d\t\t", table->row[i].dest_ip,
+			printf("%s\t\t%d\t%ld\t\t", table->row[i].dest_ip,
 					table->row[i].hop_count, table->row[i].ts);
 			display_mac_addr(table->row[i].next_hop_mac);
-//			printf("\t\t");
-//			display_mac_addr(table->row[i].self_mac);
+
 			printf("\t\t%d", table->row[i].broadcast_id);
 			printf("\n");
 		}
 	}
-	printf("------------xxx------------\n");
+	printf("------------xxx------------\n\n");
 }
 int should_update_rt(routing_table* table, frame_head* head) {
 	int output = 1;
@@ -123,30 +152,32 @@ void update_routing_table(routing_table* table, frame_head* head,
 				delete = 1;
 			}
 			if (delete == 1) {
-				printf("DEST IP = %s deleted! RREQ is sent!\n", head->dest_ip);
+//				printf("DEST IP = %s deleted! RREQ is sent!\n", head->dest_ip);
 			}
 		}
 	}
 }
 
-int source_ip_cmp(char* ip,struct server_details *serv,int number_of_interfaces) {
+int source_ip_cmp(char* ip, struct server_details *serv,
+		int number_of_interfaces) {
 	int found = -1;
-	int i=0;
+	int i = 0;
 	for (i = 0; i < number_of_interfaces; i++) {
-			if (strcmp(serv[i].ip, ip) == 0) {
-				found = i;
-			}
+		if (strcmp(serv[i].ip, ip) == 0) {
+			found = i;
+		}
 	}
 	return found;
 }
 
-int source_mac_cmp(char* mac,struct server_details *serv,int number_of_interfaces) {
+int source_mac_cmp(char* mac, struct server_details *serv,
+		int number_of_interfaces) {
 	int found = -1;
-	int i=0;
+	int i = 0;
 	for (i = 0; i < number_of_interfaces; i++) {
-			if (strcmp(serv[i].mac, mac) == 0) {
-				found = i;
-			}
+		if (strcmp(serv[i].mac, mac) == 0) {
+			found = i;
+		}
 	}
 	return found;
 }
@@ -186,7 +217,7 @@ int populate_server_details(struct server_details* serv) {
 
 			bzero(&serv[count], sizeof(struct server_details));
 			strcpy(serv[count].ip, ip_addr);
-			memcpy(serv[count].mac, hwa->if_haddr,IF_HADDR);
+			memcpy(serv[count].mac, hwa->if_haddr, IF_HADDR);
 			serv[count].index = hwa->if_index;
 
 			count++;
@@ -196,5 +227,15 @@ int populate_server_details(struct server_details* serv) {
 	}
 	free_hwa_info(hwahead);
 	return count;
+}
+
+void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
+		data_type type, frame_head* header) {
+	bzero(header, sizeof(frame_head));
+	strcpy(header->src_ip, src_ip);
+	strcpy(header->dest_ip, dest_ip);
+	header->hop_count = hops;
+	header->bc_id = b_id;
+	header->type = type;
 }
 

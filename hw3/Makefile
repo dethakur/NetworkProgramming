@@ -19,7 +19,7 @@ get_hw_addrs.o: get_hw_addrs.c
 prhwaddrs.o: prhwaddrs.c
 	${CC} ${FLAGS} -c prhwaddrs.c
 	
-odr.o: odr.c common.h hw_addrs.h
+odr.o: odr.c odr.h common.h hw_addrs.h
 	${CC} ${CFLAGS} -c odr.c
 
 common.o: common.c common.h
