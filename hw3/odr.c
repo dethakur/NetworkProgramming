@@ -28,12 +28,12 @@ int main(int argc, char* argv[]) {
 
 	void* output = malloc(ETH_FRAME_LEN);
 	bzero(output, ETH_FRAME_LEN);
-	if (argc > 1) {
-		int i = 0;
-		for (i = 0; i < number_of_interfaces; i++) {
-			send_payload(serv[i].ip, "192.168.12.4", payload_req);
-		}
-	}
+//	if (argc > 1) {
+//		int i = 0;
+//		for (i = 0; i < number_of_interfaces; i++) {
+//			send_payload(serv[i].ip, "192.168.12.4", payload_req);
+//		}
+//	}
 	int count = 1;
 	while (1) {
 		FD_ZERO(&rset);
@@ -50,8 +50,18 @@ int main(int argc, char* argv[]) {
 			count++;
 		}
 		if (FD_ISSET(dgramfd, &rset)) {
+			char output_client[MAXLINE];
 			printf("Request from client received!!  = %d\n", count);
-			Recvfrom(dgramfd, output, ETH_FRAME_LEN, 0, NULL, NULL);
+			Recvfrom(dgramfd, output_client, MAXLINE, 0, NULL, NULL);
+			struct peer_info peer_info;
+			memcpy(&peer_info, output_client, sizeof(struct peer_info));
+			printf("Dest IP = %s", peer_info.dest_ip);
+			int i=0;
+			for (i = 0; i < number_of_interfaces; i++) {
+				send_payload(serv[i].ip,&peer_info.dest_ip, payload_req);
+				push_data_to_buf(&buffer, peer_info);
+			}
+
 			count++;
 		}
 
@@ -139,11 +149,11 @@ void process_frame(char* output) {
 }
 
 void send_payload(char* src_ip, char* dest_ip, data_type payload) {
+//	char *dest_ip = &peer_info.dest_ip;
 	printf("Sending Payload to %s \n", dest_ip);
 	int t_i = get_row_entry(&table, dest_ip);
 	if (t_i == -1) {
 		printf("Dest IP %s not in RT. Making RREQ!\n", dest_ip);
-		push_data_to_buf(&buffer, dest_ip);
 		int i = 0;
 		for (i = 0; i < number_of_interfaces; i++) {
 			send_rreq(rawfd, broadcast_id, 1, serv[i].ip, dest_ip);

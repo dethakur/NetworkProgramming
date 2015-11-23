@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 
 	bzero(&odraddr, sizeof(odraddr));
 	odraddr.sun_family = AF_LOCAL;
-	strcpy(odraddr.sun_path, DOMAIN_SOCK_PATH);
+	strcpy(odraddr.sun_path, RAW_SERVER_PROTO);
 
 	char this_ip[INET_ADDRSTRLEN] = "";
 	set_this_ip(this_ip);
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 	//todo: 1 extra sendto added here. Not sure why the server does not get the client
 	// socket details properly on the first call to recvfrom.
 	//	Sendto(sockfd, sendline, strlen(sendline), 0, &odraddr, sizeof(odraddr));
-	msg_send(sockfd, "ip", DOMAIN_SOCK_PATH, this_ip, client_port, sendline, 0,
+	msg_send(sockfd, "ip", RAW_SERVER_PROTO, this_ip, client_port, sendline, 0,
 			&odraddr);
 
 	char arg[20] = "";

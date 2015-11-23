@@ -70,22 +70,24 @@ void init_buffer(server_buf* buf, int count) {
 	}
 }
 
-void push_data_to_buf(server_buf* buf, char* ip) {
+void push_data_to_buf(server_buf* buf, struct peer_info peer_info) {
 	int i = 0;
 	for (i = 0; i < 100; i++) {
 		if (buf[i].count == 0) {
 			break;
 		}
-		if (strcmp(buf[i].ip, ip) == 0) {
-			break;
-		}
+//		if (strcmp(buf[i].peer_info.dest_ip, ip) == 0) {
+//			break;
+//		}
 	}
-	if (buf[i].count == 0) {
-		buf[i].count += 1;
-		strcpy(buf[i].ip, ip);
-	} else {
-		buf[i].count += 1;
-	}
+	printf("Destip pushed to buffer = %s",peer_info.dest_ip);
+	memcpy(&buf[i].peer_info,&peer_info,sizeof(struct peer_info));
+//	if (buf[i].count == 0) {
+//		buf[i].count += 1;
+//		strcpy(buf[i].ip, ip);
+//	} else {
+//		buf[i].count += 1;
+//	}
 }
 
 void display_routing_table(routing_table* table) {

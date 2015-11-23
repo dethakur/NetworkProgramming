@@ -32,7 +32,7 @@ struct server_details {
 };
 
 struct server_buf{
-	char ip[IP_LEN];
+	struct peer_info peer_info;
 	int count;
 };
 typedef struct server_buf server_buf;
@@ -67,7 +67,7 @@ typedef struct routing_table routing_table;
 
 //void get_ip_address(char*,int*);
 void init_buffer(server_buf*,int);
-void push_data_to_buf(server_buf*,char*);
+void push_data_to_buf(server_buf*,struct peer_info;);
 void display_header(frame_head*);
 void display_mac_addr(char*);
 void init_routing_table(routing_table*);

@@ -27,13 +27,13 @@ common.o: common.c common.h
 	${CC} ${CFLAGS} -c common.c	
 
 server: server.o common.o
-	${CC} ${FLAGS} -o server server.o common.o ${LIBS}
+	${CC} ${FLAGS} -o server server.o get_hw_addrs.o common.o ${LIBS}
 
 server.o: server.c  common.h
 	${CC} ${CFLAGS} -c server.c 
 
 client: client.o common.o
-	${CC} ${FLAGS} -o client client.o common.o ${LIBS}	
+	${CC} ${FLAGS} -o client client.o get_hw_addrs.o common.o ${LIBS}	
 	
 client.o: client.c common.h
 	${CC} ${CFLAGS} -c client.c
