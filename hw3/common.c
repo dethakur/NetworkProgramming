@@ -4,7 +4,7 @@ void display_header(frame_head* head) {
 	printf("Src Ip = %s \t", head->src_ip);
 	printf("Dest Ip = %s \t", head->dest_ip);
 	printf("Hop count = %d \t", head->hop_count);
-//	printf("BroadCast Id = %d \t", head->bc_id);
+	//	printf("BroadCast Id = %d \t", head->bc_id);
 	if (head->type == rreq) {
 		printf("RREQ\n");
 	}
@@ -76,18 +76,18 @@ void push_data_to_buf(server_buf* buf, struct peer_info peer_info) {
 		if (buf[i].count == 0) {
 			break;
 		}
-//		if (strcmp(buf[i].peer_info.dest_ip, ip) == 0) {
-//			break;
-//		}
+		//		if (strcmp(buf[i].peer_info.dest_ip, ip) == 0) {
+		//			break;
+		//		}
 	}
-	printf("Destip pushed to buffer = %s",peer_info.dest_ip);
-	memcpy(&buf[i].peer_info,&peer_info,sizeof(struct peer_info));
-//	if (buf[i].count == 0) {
-//		buf[i].count += 1;
-//		strcpy(buf[i].ip, ip);
-//	} else {
-//		buf[i].count += 1;
-//	}
+	printf("Destip pushed to buffer = %s", peer_info.dest_ip);
+	memcpy(&buf[i].peer_info, &peer_info, sizeof(struct peer_info));
+	//	if (buf[i].count == 0) {
+	//		buf[i].count += 1;
+	//		strcpy(buf[i].ip, ip);
+	//	} else {
+	//		buf[i].count += 1;
+	//	}
 }
 
 void display_routing_table(routing_table* table) {
@@ -132,7 +132,7 @@ void update_routing_table(routing_table* table, frame_head* head,
 		table->row[index].is_filled = 1;
 		memcpy(table->row[index].dest_ip, head->src_ip, IP_LEN);
 		memcpy(table->row[index].next_hop_mac, next_hop_mac, sizeof(char) * 6);
-//		memcpy(table->row[index].self_mac, self_mac, sizeof(char) * 6);
+		//		memcpy(table->row[index].self_mac, self_mac, sizeof(char) * 6);
 		table->row[index].ts = time(NULL);
 		table->row[index].broadcast_id = head->bc_id;
 		table->row[index].rrep_sent = 0;
@@ -154,7 +154,7 @@ void update_routing_table(routing_table* table, frame_head* head,
 				delete = 1;
 			}
 			if (delete == 1) {
-//				printf("DEST IP = %s deleted! RREQ is sent!\n", head->dest_ip);
+				//				printf("DEST IP = %s deleted! RREQ is sent!\n", head->dest_ip);
 			}
 		}
 	}
@@ -193,13 +193,13 @@ int populate_server_details(struct server_details* serv) {
 	bzero(ip_addr, sizeof(ip_addr));
 
 	int count = 0;
-//	bzero(serv, sizeof(struct server_details));
-//	serv[0] = 0;
-//	serv[1] = 0;
+	//	bzero(serv, sizeof(struct server_details));
+	//	serv[0] = 0;
+	//	serv[1] = 0;
 
 	for (hwahead = hwa = Get_hw_addrs(); hwa != NULL; hwa = hwa->hwa_next) {
-		if ((strcmp(hwa->if_name, "lo") == 0)
-				|| (strcmp(hwa->if_name, "eth0") == 0))
+		if ((strcmp(hwa->if_name, "lo") == 0) || (strcmp(hwa->if_name, "eth0")
+				== 0))
 			continue;
 
 		prflag = 0;
@@ -242,9 +242,27 @@ void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
 }
 
 void set_ip(char *host, char *ip) {
-	struct hostent * hptr = gethostbyname(host);
-	char **pptr = hptr->h_addr_list;
-	Inet_ntop(hptr->h_addrtype, *pptr, ip, INET_ADDRSTRLEN);
+	char ipmap[12][20];
+
+	strcpy(ipmap[0], "dontcare" );
+	strcpy(ipmap[1], "192.168.10.1" );
+	strcpy(ipmap[2], "192.168.10.2" );
+	strcpy(ipmap[3], "192.168.10.3" );
+	strcpy(ipmap[4], "192.168.11.4" );
+	strcpy(ipmap[5], "192.168.11.5" );
+	strcpy(ipmap[6], "192.168.11.6" );
+	strcpy(ipmap[7], "192.168.12.7" );
+	strcpy(ipmap[8], "192.168.12.8" );
+	strcpy(ipmap[9], "192.168.13.9" );
+	strcpy(ipmap[10], "192.168.13.10" );
+	strcpy(ipmap[11], "" );
+
+	// host will be like vm1, vm2 etc.
+	int index = atoi(host+2);
+	strcpy(ip, ipmap[index]);
+//	struct hostent * hptr = gethostbyname(host);
+//	char **pptr = hptr->h_addr_list;
+//	Inet_ntop(hptr->h_addrtype, *pptr, ip, INET_ADDRSTRLEN);
 }
 
 void set_this_ip(char *this_ip) {
@@ -294,6 +312,6 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 	strcpy(src_ip, pinfo.src_ip);
 	strcpy(src_port, pinfo.src_port);
 }
-void get_data_from_server(char* output){
+void get_data_from_server(char* output) {
 
 }
