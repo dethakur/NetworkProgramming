@@ -87,3 +87,4 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 		struct sockaddr_un * odr_addr_ptr);
 void set_ip(char *host, char *ip);
 void set_this_ip(char *this_ip);
+void get_data_from_server(char*);

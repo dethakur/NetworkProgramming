@@ -40,8 +40,8 @@ int main(int argc, char **argv) {
 	//todo: 1 extra sendto added here. Not sure why the server does not get the client
 	// socket details properly on the first call to recvfrom.
 	//	Sendto(sockfd, sendline, strlen(sendline), 0, &odraddr, sizeof(odraddr));
-	msg_send(sockfd, "ip", RAW_SERVER_PROTO, this_ip, client_port, sendline, 0,
-			&odraddr);
+//	msg_send(sockfd, "ip", RAW_SERVER_PROTO, this_ip, client_port, sendline, 0,
+//			&odraddr);
 
 	char arg[20] = "";
 	while (1) {

@@ -294,4 +294,6 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 	strcpy(src_ip, pinfo.src_ip);
 	strcpy(src_port, pinfo.src_port);
 }
+void get_data_from_server(char* output){
 
+}

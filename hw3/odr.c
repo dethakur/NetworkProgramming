@@ -58,8 +58,10 @@ int main(int argc, char* argv[]) {
 			printf("Dest IP = %s", peer_info.dest_ip);
 			int i=0;
 			for (i = 0; i < number_of_interfaces; i++) {
-				send_payload(serv[i].ip,&peer_info.dest_ip, payload_req);
+				strcpy(peer_info.dest_ip,"192.168.10.2");
+				send_payload(serv[i].ip,"192.168.10.2", payload_req);
 				push_data_to_buf(&buffer, peer_info);
+				break;
 			}
 
 			count++;
@@ -132,6 +134,8 @@ void process_frame(char* output) {
 		if (index != -1) {
 			printf("Pay load received by destination!\n");
 			if (header.type == payload_req) {
+				char output[MAXLINE];
+				get_data_from_server(output);
 				send_payload(header.dest_ip, header.src_ip, payload_resp);
 			} else {
 				printf("Data Received = %ld = \n", header.timeVal);
