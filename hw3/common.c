@@ -239,3 +239,57 @@ void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
 	header->type = type;
 }
 
+void set_ip(char *host, char *ip) {
+	struct hostent * hptr = gethostbyname(host);
+	char **pptr = hptr->h_addr_list;
+	Inet_ntop(hptr->h_addrtype, *pptr, ip, INET_ADDRSTRLEN);
+}
+
+void set_this_ip(char *this_ip) {
+	char hostname[MAX_VM_NAME_LEN] = "";
+	gethostname(hostname, MAX_VM_NAME_LEN);
+	set_ip(hostname, this_ip);
+}
+
+int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
+		char *src_port, char *msg, int flag, struct sockaddr_un * odr_addr_ptr) {
+	char hostname[MAX_VM_NAME_LEN] = "";
+	gethostname(hostname, MAX_VM_NAME_LEN);
+
+	struct peer_info pinfo;
+	bzero(&pinfo, sizeof(pinfo));
+	strcpy(pinfo.dest_port, dest_port);
+	strncpy(pinfo.dest_ip, dest_ip, INET_ADDRSTRLEN);
+	strcpy(pinfo.src_port, src_port);
+	strcpy(pinfo.src_ip, src_ip);
+	strncpy(pinfo.source_vm, hostname, MAX_VM_NAME_LEN);
+	strcpy(pinfo.msg, msg);
+
+	char odr_info[MAXLINE];
+	// copy all info into a char sequence to send the same to ODR
+	memcpy(odr_info, &pinfo, sizeof(struct peer_info));
+
+	// send all info to ODR
+	sendto(socket, odr_info, sizeof(struct peer_info), 0, odr_addr_ptr,
+			sizeof(*odr_addr_ptr));
+}
+
+int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
+		struct sockaddr_un * odr_addr_ptr) {
+	int size = sizeof(struct peer_info);
+	struct sockaddr_un odraddr;
+	socklen_t odraddrlen;
+	char recvline[MAXLINE];
+	bzero(recvline, MAXLINE);
+
+	Recvfrom(socket, recvline, size, 0, odr_addr_ptr, &odraddrlen);
+
+	struct peer_info pinfo;
+	bzero(&pinfo, size);
+	memcpy(&pinfo, recvline, sizeof(pinfo));
+
+	strcpy(msg, pinfo.msg);
+	strcpy(src_ip, pinfo.src_ip);
+	strcpy(src_port, pinfo.src_port);
+}
+

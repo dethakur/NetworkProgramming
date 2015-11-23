@@ -1,3 +1,4 @@
+#include "unp.h"
 #include "hw_addrs.h"
 
 #define ETH_FRAME_LEN 1518
@@ -19,13 +20,6 @@ struct peer_info {
 	char msg[MAX_MSG_LEN];
 	char source_vm[MAX_VM_NAME_LEN];
 }__attribute((packed));
-
-int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
-		char *src_port, char *msg, int flag, struct sockaddr_un * odr_addr_ptr);
-int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
-		struct sockaddr_un * odr_addr_ptr);
-void set_ip(char *host, char *ip);
-void set_this_ip(char *this_ip);
 
 typedef enum {
 	rrep, rreq, payload_req,payload_resp
@@ -87,77 +81,9 @@ int should_update_rt(routing_table*, frame_head*);
 int populate_server_details(struct server_details*);
 void populate_frame_header(char*,char*,int,int,data_type,frame_head*);
 
-
-
-
-void set_ip(char *host, char *ip) {
-	struct hostent * hptr = gethostbyname(host);
-	char **pptr = hptr->h_addr_list;
-	Inet_ntop(hptr->h_addrtype, *pptr, ip, INET_ADDRSTRLEN);
-}
-
-void set_this_ip(char *this_ip) {
-	char hostname[MAX_VM_NAME_LEN] = "";
-	gethostname(hostname, MAX_VM_NAME_LEN);
-	set_ip(hostname, this_ip);
-}
-
 int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
-		char *src_port, char *msg, int flag, struct sockaddr_un * odr_addr_ptr) {
-	char hostname[MAX_VM_NAME_LEN] = "";
-	gethostname(hostname, MAX_VM_NAME_LEN);
-
-	struct peer_info pinfo;
-	bzero(&pinfo, sizeof(pinfo));
-	strcpy(pinfo.dest_port, dest_port);
-	strncpy(pinfo.dest_ip, dest_ip, INET_ADDRSTRLEN);
-	strcpy(pinfo.src_port, src_port);
-	strcpy(pinfo.src_ip, src_ip);
-	strncpy(pinfo.source_vm, hostname, MAX_VM_NAME_LEN);
-	strcpy(pinfo.msg, msg);
-
-	int size = sizeof(struct peer_info) + 1;
-	char odr_info[size];
-	// copy all info into a char sequence to send the same to ODR
-	memcpy(odr_info, &pinfo, sizeof(pinfo));
-	odr_info[size] = '\0';
-
-	struct peer_info pinfo2;
-	bzero(&pinfo2, sizeof(pinfo2));
-	memcpy(&pinfo2, odr_info, sizeof(pinfo2));
-	printf("time to check\n");
-	printf("%s\n", pinfo.dest_port);
-	printf("%s\n", pinfo.dest_ip);
-	printf("%s\n", pinfo.src_port);
-	printf("%s\n", pinfo.src_ip);
-	printf("%s\n", pinfo.source_vm);
-	printf("%s\n", pinfo.msg);
-	printf("%s\n", pinfo2.dest_port);
-	printf("%s\n", pinfo2.dest_ip);
-	printf("%s\n", pinfo2.src_port);
-	printf("%s\n", pinfo2.src_ip);
-	printf("%s\n", pinfo2.source_vm);
-	printf("%s\n", pinfo2.msg);
-
-	// send all info to ODR
-	sendto(socket, odr_info, strlen(odr_info), 0, odr_addr_ptr,
-			sizeof(*odr_addr_ptr));
-}
-
+		char *src_port, char *msg, int flag, struct sockaddr_un * odr_addr_ptr);
 int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
-		struct sockaddr_un * odr_addr_ptr) {
-	int size = sizeof(struct peer_info) + 1;
-	char recvline[size];
-	struct sockaddr_un odraddr;
-	socklen_t odraddrlen;
-
-	Recvfrom(socket, recvline, size, 0, &odraddr, &odraddrlen);
-
-	struct peer_info pinfo;
-	bzero(&pinfo, sizeof(pinfo));
-	memcpy(&pinfo, recvline, sizeof(pinfo));
-
-	strcpy(msg, pinfo.msg);
-	strcpy(src_ip, pinfo.src_ip);
-	strcpy(src_port, pinfo.src_port);
-}
+		struct sockaddr_un * odr_addr_ptr);
+void set_ip(char *host, char *ip);
+void set_this_ip(char *this_ip);
