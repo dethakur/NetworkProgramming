@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 				push_data_to_buf(&buffer, peer_info);
 				strcpy(peer_info.dest_ip, peer_info.dest_ip);
 				send_payload(serv[i].ip, peer_info.dest_ip, payload_req," ");
-				break;
+//				break;
 			}
 
 			count++;
