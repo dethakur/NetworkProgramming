@@ -55,12 +55,12 @@ int main(int argc, char* argv[]) {
 			Recvfrom(dgramfd, output_client, MAXLINE, 0, NULL, NULL);
 			struct peer_info peer_info;
 			memcpy(&peer_info, output_client, sizeof(struct peer_info));
-			printf("Dest IP = %s", peer_info.dest_ip);
+			printf("Dest IP = %s\n", peer_info.dest_ip);
 			int i=0;
 			for (i = 0; i < number_of_interfaces; i++) {
-				strcpy(peer_info.dest_ip,"192.168.10.2");
-				send_payload(serv[i].ip,"192.168.10.2", payload_req);
 				push_data_to_buf(&buffer, peer_info);
+				strcpy(peer_info.dest_ip,peer_info.dest_ip);
+				send_payload(serv[i].ip,peer_info.dest_ip, payload_req);
 				break;
 			}
 
