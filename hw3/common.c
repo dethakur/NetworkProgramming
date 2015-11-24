@@ -313,7 +313,8 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 	strcpy(src_port, pinfo.src_port);
 }
 
-void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd){
+void get_data_from_server(frame_head *header_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd){
+	struct peer_info pinfo;
 	char buf[20] = "getTime";
 	char recvline[MAXLINE];
 	int size = sizeof(struct peer_info);
@@ -325,14 +326,9 @@ void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *serva
 	socklen_t temp_odraddrlen;
 	Recvfrom(dgramfd, recvline, size, 0, &temp_servaddr, &temp_odraddrlen);
 
-	bzero(pinfo_ptr, size);
-	memcpy(pinfo_ptr, recvline, size);
+	bzero(&pinfo, size);
+	memcpy(&pinfo, recvline, size);
 
-	printf("Params Received from server\n");
-	printf("%s\n", pinfo_ptr->dest_port);
-	printf("%s\n", pinfo_ptr->dest_ip);
-	printf("%s\n", pinfo_ptr->src_port);
-	printf("%s\n", pinfo_ptr->src_ip);
-	printf("%s\n", pinfo_ptr->msg);
-	printf("%s\n", pinfo_ptr->source_vm);
+	strcpy(header_ptr->msg, pinfo.msg);
+	printf("Received response from server %s\n", header_ptr->msg);
 }

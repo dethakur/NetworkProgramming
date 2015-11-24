@@ -76,6 +76,15 @@ int main(int argc, char* argv[]) {
 	return 1;
 }
 
+void send_to_client(int dgramfd, char* msg, struct peer_info * pinfo_ptr) {
+	struct sockaddr_un cliaddr;
+	bzero(&cliaddr, sizeof(struct sockaddr_un));
+	cliaddr.sun_family = AF_LOCAL;
+	strcpy(cliaddr.sun_path, pinfo_ptr->src_port);
+
+	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", msg, 0, &cliaddr);
+}
+
 void process_frame(char* output) {
 	char dest_mac[6];
 	char src_mac[6];
@@ -138,11 +147,18 @@ void process_frame(char* output) {
 		if (index != -1) {
 			printf("Pay load received by destination!\n");
 			if (header.type == payload_req) {
-				struct peer_info pinfo;
-				get_data_from_server(&pinfo, &serveraddr, dgramfd);
+				get_data_from_server(&header, &serveraddr, dgramfd);
 				send_payload(header.dest_ip, header.src_ip, payload_resp);
 			} else {
-				printf("Data Received = %ld = \n", header.timeVal);
+				printf("Data Received = %s = \n", header.msg);
+				int i = 0;
+				for (i = 0; i < 100; i++) {
+					if (strcmp(header.src_ip, buffer[i].peer_info.dest_ip) && buffer[i].count != 0) {
+						printf("Found client to send reply\n");
+						send_to_client(dgramfd, header.msg, &(buffer[i].peer_info));
+						break;
+					}
+				}
 			}
 
 		} else {
