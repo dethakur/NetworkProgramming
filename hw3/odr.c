@@ -8,7 +8,6 @@ int main(int argc, char* argv[]) {
 	number_of_interfaces = populate_server_details(serv);
 	printf("Number of Interfaces = %d \n", number_of_interfaces);
 
-
 	unlink(PF_PACK_PROTO);
 	unlink(RAW_SERVER_PROTO);
 
@@ -60,11 +59,11 @@ int main(int argc, char* argv[]) {
 			struct peer_info peer_info;
 			memcpy(&peer_info, output_client, sizeof(struct peer_info));
 			printf("Dest IP = %s\n", peer_info.dest_ip);
-			int i=0;
+			int i = 0;
 			for (i = 0; i < number_of_interfaces; i++) {
 				push_data_to_buf(&buffer, peer_info);
-				strcpy(peer_info.dest_ip,peer_info.dest_ip);
-				send_payload(serv[i].ip,peer_info.dest_ip, payload_req);
+				strcpy(peer_info.dest_ip, peer_info.dest_ip);
+				send_payload(serv[i].ip, peer_info.dest_ip, payload_req," ");
 				break;
 			}
 
@@ -82,7 +81,8 @@ void send_to_client(int dgramfd, char* msg, struct peer_info * pinfo_ptr) {
 	cliaddr.sun_family = AF_LOCAL;
 	strcpy(cliaddr.sun_path, pinfo_ptr->src_port);
 
-	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", msg, 0, &cliaddr);
+	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", msg, 0,
+			&cliaddr);
 }
 
 void process_frame(char* output) {
@@ -133,7 +133,7 @@ void process_frame(char* output) {
 		int index = source_ip_cmp(header.dest_ip, serv, number_of_interfaces);
 		if (index != -1) {
 			printf("RREP received by Destination!! \n");
-			send_payload(header.dest_ip, header.src_ip, payload_req);
+			send_payload(header.dest_ip, header.src_ip, payload_req," ");
 		} else {
 
 			printf("RREP not received by Destination!! Forwarding RREP = \n");
@@ -148,15 +148,19 @@ void process_frame(char* output) {
 			printf("Pay load received by destination!\n");
 			if (header.type == payload_req) {
 				get_data_from_server(&header, &serveraddr, dgramfd);
-				send_payload(header.dest_ip, header.src_ip, payload_resp);
+				send_payload(header.dest_ip, header.src_ip, payload_resp,
+						&header.msg);
 			} else {
 				printf("Data Received = %s = \n", header.msg);
 				int i = 0;
 				for (i = 0; i < 100; i++) {
-					printf("Comparing %s to %s = %d\n",header.src_ip,buffer[i].peer_info.dest_ip,strcmp(header.src_ip,buffer[i].peer_info.dest_ip));
-					if ((strcmp(header.src_ip, buffer[i].peer_info.dest_ip) ==0) && buffer[i].count != 0) {
-						printf("Found client to send reply\n");
-						send_to_client(dgramfd, header.msg, &(buffer[i].peer_info));
+					//	printf("Comparing %s to %s = %d\n",header.src_ip,buffer[i].peer_info.dest_ip,strcmp(header.src_ip,buffer[i].peer_info.dest_ip));
+					if ((strcmp(header.src_ip, buffer[i].peer_info.dest_ip) == 0)
+							&& buffer[i].count != 0) {
+						printf("Found client to send reply with msg = %s\n",
+								header.msg);
+						send_to_client(dgramfd, header.msg,
+								&(buffer[i].peer_info));
 						buffer[i].count = 0;
 						break;
 					}
@@ -165,8 +169,8 @@ void process_frame(char* output) {
 
 		} else {
 			if (t_i != -1) {
-				printf("Destination is there , forwarding payload!\n");
-				send_payload(header.src_ip, header.dest_ip, header.type);
+				printf("Destination is there , forwarding payload with data = %s!\n",header.msg);
+				send_payload(header.src_ip, header.dest_ip, header.type,&header.msg);
 			} else {
 				printf("Destination is not there! Ignoring Payload\n");
 			}
@@ -174,9 +178,9 @@ void process_frame(char* output) {
 	}
 }
 
-void send_payload(char* src_ip, char* dest_ip, data_type payload) {
+void send_payload(char* src_ip, char* dest_ip, data_type payload, char* msg) {
 //	char *dest_ip = &peer_info.dest_ip;
-	printf("Sending Payload to %s \n", dest_ip);
+//	printf("Sending Payload to %s with data = %s\n", dest_ip,msg);
 	int t_i = get_row_entry(&table, dest_ip);
 	if (t_i == -1) {
 		printf("Dest IP %s not in RT. Making RREQ!\n", dest_ip);
@@ -188,8 +192,16 @@ void send_payload(char* src_ip, char* dest_ip, data_type payload) {
 		int i = 0;
 		for (i = 0; i < number_of_interfaces; i++) {
 			frame_head header;
+
+//			if (payload == payload_resp && (strcmp(msg, "") != 0)){
+//
+//				printf("String copied to message = %s\n",header.msg);
+//			}
+
 			populate_frame_header(src_ip, dest_ip, table.row[t_i].hop_count,
 					table.row[t_i].broadcast_id, payload, &header);
+			strcpy(&header.msg, msg);
+//						printf("Sending Payload to %s with data = %s\n", dest_ip,header.msg);
 			send_packet(table.row[t_i].next_hop_mac, serv[i].mac, serv[i].index,
 					rawfd, &header);
 		}

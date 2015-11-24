@@ -17,6 +17,6 @@ static struct sockaddr_un serveraddr;
 void send_rreq(int, int, int, char*, char*);
 void send_packet(char*, char*, int, int, frame_head*);
 void process_frame(char*);
-void send_payload(char*, char*, data_type);
+void send_payload(char*, char*, data_type,char*);
 void send_rreq(int, int, int, char*, char*);
 static server_buf buffer[100];
