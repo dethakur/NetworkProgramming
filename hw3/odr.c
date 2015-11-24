@@ -153,6 +153,7 @@ void process_frame(char* output) {
 				printf("Data Received = %s = \n", header.msg);
 				int i = 0;
 				for (i = 0; i < 100; i++) {
+					printf("Comparing %s to %s = %d\n",header.src_ip,buffer[i].peer_info.dest_ip,strcmp(header.src_ip,buffer[i].peer_info.dest_ip));
 					if ((strcmp(header.src_ip, buffer[i].peer_info.dest_ip) ==0) && buffer[i].count != 0) {
 						printf("Found client to send reply\n");
 						send_to_client(dgramfd, header.msg, &(buffer[i].peer_info));

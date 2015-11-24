@@ -82,6 +82,7 @@ void push_data_to_buf(server_buf* buf, struct peer_info peer_info) {
 	}
 	printf("Destip pushed to buffer = %s", peer_info.dest_ip);
 	memcpy(&buf[i].peer_info, &peer_info, sizeof(struct peer_info));
+	buf[i].count = 1;
 	//	if (buf[i].count == 0) {
 	//		buf[i].count += 1;
 	//		strcpy(buf[i].ip, ip);
