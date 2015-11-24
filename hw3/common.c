@@ -318,7 +318,8 @@ void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *serva
 	char recvline[MAXLINE];
 	int size = sizeof(struct peer_info);
 
-	sendto(dgramfd, buf, strlen(buf), 0, servaddr_ptr, sizeof(*servaddr_ptr));
+//	sendto(dgramfd, buf, strlen(buf), 0, servaddr_ptr, sizeof(*servaddr_ptr));
+	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", buf, 0, servaddr_ptr);
 
 	struct sockaddr_un temp_servaddr;
 	socklen_t temp_odraddrlen;
@@ -327,7 +328,7 @@ void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *serva
 	bzero(pinfo_ptr, size);
 	memcpy(pinfo_ptr, recvline, size);
 
-	printf("Received from server\n");
+	printf("Params Received from server\n");
 	printf("%s\n", pinfo_ptr->dest_port);
 	printf("%s\n", pinfo_ptr->dest_ip);
 	printf("%s\n", pinfo_ptr->src_port);

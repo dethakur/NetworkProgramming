@@ -16,14 +16,18 @@ int main(int argc, char* argv[]) {
 	dgramfd = Socket(AF_LOCAL, SOCK_DGRAM, 0);
 
 	fd_set rset;
-
 	bzero(&rset, sizeof(fd_set));
-	bzero(&servaddr, sizeof(struct sockaddr_un));
 
-	servaddr.sun_family = AF_LOCAL;
-	strcpy(servaddr.sun_path, RAW_SERVER_PROTO);
+	bzero(&serveraddr, sizeof(struct sockaddr_un));
+	serveraddr.sun_family = AF_LOCAL;
+	strcpy(serveraddr.sun_path, DOMAIN_SOCK_PATH);
 
-	Bind(dgramfd, (SA*) &servaddr, sizeof(servaddr));
+	struct sockaddr_un odraddr;
+	bzero(&odraddr, sizeof(struct sockaddr_un));
+	odraddr.sun_family = AF_LOCAL;
+	strcpy(odraddr.sun_path, RAW_SERVER_PROTO);
+
+	Bind(dgramfd, (SA*) &odraddr, sizeof(odraddr));
 	int max_val = max(rawfd, dgramfd) + 1;
 
 	void* output = malloc(ETH_FRAME_LEN);
@@ -135,7 +139,7 @@ void process_frame(char* output) {
 			printf("Pay load received by destination!\n");
 			if (header.type == payload_req) {
 				struct peer_info pinfo;
-				get_data_from_server(&pinfo, &servaddr, dgramfd);
+				get_data_from_server(&pinfo, &serveraddr, dgramfd);
 				send_payload(header.dest_ip, header.src_ip, payload_resp);
 			} else {
 				printf("Data Received = %ld = \n", header.timeVal);

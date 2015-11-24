@@ -10,10 +10,9 @@ void respond(int sockfd) {
 
 	struct sockaddr_un odraddr;
 	socklen_t odraddrlen;
-	//todo:uncomment below
-	//	bzero(&odraddr, sizeof(odraddr));
-	//	odraddr.sun_family = AF_LOCAL;
-	//	strcpy(odraddr.sun_path, "ODR_PORT");
+	bzero(&odraddr, sizeof(odraddr));
+	odraddr.sun_family = AF_LOCAL;
+	strcpy(odraddr.sun_path, RAW_SERVER_PROTO);
 
 	fd_set rset;
 	while (1) {
@@ -25,13 +24,7 @@ void respond(int sockfd) {
 			//			Recvfrom(sockfd, recvline, 100, 0, &odraddr, &odraddrlen);
 			char client_ip[100];
 			char client_port[100];
-			bzero(&odraddr, sizeof(odraddr));
 			msg_recv(sockfd, recvline, client_ip, client_port, &odraddr);
-
-			// to directly communicate to client, uncomment below - only for testing
-			//			bzero(&odraddr, sizeof(odraddr));
-			//			odraddr.sun_family = AF_LOCAL;
-			//			strcpy(odraddr.sun_path, client_port);
 
 			printf("Received request: %s from client ip: %s, port: %s\n",
 					recvline, client_ip, client_port);
