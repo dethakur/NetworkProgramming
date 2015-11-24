@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
 	number_of_interfaces = populate_server_details(serv);
 	printf("Number of Interfaces = %d \n", number_of_interfaces);
 
-	struct sockaddr_un servaddr;
+
 	unlink(PF_PACK_PROTO);
 	unlink(RAW_SERVER_PROTO);
 
@@ -134,8 +134,8 @@ void process_frame(char* output) {
 		if (index != -1) {
 			printf("Pay load received by destination!\n");
 			if (header.type == payload_req) {
-				char output[MAXLINE];
-				get_data_from_server(output);
+				struct peer_info pinfo;
+				get_data_from_server(&pinfo, &servaddr, dgramfd);
 				send_payload(header.dest_ip, header.src_ip, payload_resp);
 			} else {
 				printf("Data Received = %ld = \n", header.timeVal);

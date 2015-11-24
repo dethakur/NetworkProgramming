@@ -312,6 +312,26 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 	strcpy(src_ip, pinfo.src_ip);
 	strcpy(src_port, pinfo.src_port);
 }
-void get_data_from_server(char* output) {
 
+void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd){
+	char buf[20] = "getTime";
+	char recvline[MAXLINE];
+	int size = sizeof(struct peer_info);
+
+	sendto(dgramfd, buf, strlen(buf), 0, servaddr_ptr, sizeof(*servaddr_ptr));
+
+	struct sockaddr_un temp_servaddr;
+	socklen_t temp_odraddrlen;
+	Recvfrom(dgramfd, recvline, size, 0, &temp_servaddr, &temp_odraddrlen);
+
+	bzero(pinfo_ptr, size);
+	memcpy(pinfo_ptr, recvline, size);
+
+	printf("Received from server\n");
+	printf("%s\n", pinfo_ptr->dest_port);
+	printf("%s\n", pinfo_ptr->dest_ip);
+	printf("%s\n", pinfo_ptr->src_port);
+	printf("%s\n", pinfo_ptr->src_ip);
+	printf("%s\n", pinfo_ptr->msg);
+	printf("%s\n", pinfo_ptr->source_vm);
 }

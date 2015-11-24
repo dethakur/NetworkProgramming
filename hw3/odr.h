@@ -12,6 +12,7 @@ static int number_of_interfaces;
 static routing_table table;
 static int broadcast_id = 1;
 static int rawfd, dgramfd;
+static struct sockaddr_un servaddr;
 
 void send_rreq(int, int, int, char*, char*);
 void send_packet(char*, char*, int, int, frame_head*);

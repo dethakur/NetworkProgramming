@@ -67,7 +67,7 @@ typedef struct routing_table routing_table;
 
 //void get_ip_address(char*,int*);
 void init_buffer(server_buf*,int);
-void push_data_to_buf(server_buf*,struct peer_info;);
+void push_data_to_buf(server_buf*,struct peer_info);
 void display_header(frame_head*);
 void display_mac_addr(char*);
 void init_routing_table(routing_table*);
@@ -87,4 +87,4 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 		struct sockaddr_un * odr_addr_ptr);
 void set_ip(char *host, char *ip);
 void set_this_ip(char *this_ip);
-void get_data_from_server(char*);
+void get_data_from_server(struct peer_info *pinfo_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd);
