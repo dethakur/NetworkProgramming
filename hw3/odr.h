@@ -13,6 +13,7 @@ static routing_table table;
 static int broadcast_id = 1;
 static int rawfd, dgramfd;
 static struct sockaddr_un serveraddr;
+char currhostname[50] = "";
 
 void send_rreq(int, int, int, char*, char*);
 void send_packet(char*, char*, int, int, frame_head*);

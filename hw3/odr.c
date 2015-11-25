@@ -3,6 +3,8 @@
 //void send_packet(char* dest_ip,char* data);
 
 int main(int argc, char* argv[]) {
+	gethostname(currhostname, 50);
+
 	init_routing_table(&table);
 	init_buffer(buffer, 100);
 	number_of_interfaces = populate_server_details(serv);
