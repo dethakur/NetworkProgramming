@@ -334,35 +334,36 @@ void get_data_from_server(frame_head *header_ptr,
 }
 int check_duplicate_pac(duplicate_packet* pkt, char* src_mac_addr,
 		char* dest_mac_addr, data_type type, int packet_number) {
-	printf("[check_duplicate_pac] packet counter = %d",packet_number);
-	int i = 0;
-	int found = -1;
-	for (i = 0; i < 1000; i++) {
-		if (strcmp(pkt[i].src_mac_addr, src_mac_addr) == 0
-				&& strcmp(pkt[i].dest_mac_addr, dest_mac_addr) == 0
-				&& pkt[i].type == type
-				&& pkt[i].packet_number == packet_number) {
-			found = 1;
-			break;
-		}
-		if (pkt[i].count == 0) {
-			break;
-		}
-	}
-//	printf("[%s]Found = %d ",currhostname,found);
-	if (found == -1) {
-		pkt[i].type = type;
-		pkt[i].count = 1;
-		strcpy(pkt[i].src_mac_addr, src_mac_addr);
-		strcpy(pkt[i].dest_mac_addr, dest_mac_addr);
-		pkt[i].packet_number = packet_number;
-	}
-	printf(
-			"[%s] Filled Value %d and found = %d and packet number = %d for mac = ",
-			currhostname, i, found,packet_number);
-	display_mac_addr(src_mac_addr);
-	printf("\n");
-	return found;
+	return -1;
+//	printf("[check_duplicate_pac] packet counter = %d",packet_number);
+//	int i = 0;
+//	int found = -1;
+//	for (i = 0; i < 1000; i++) {
+//		if (strcmp(pkt[i].src_mac_addr, src_mac_addr) == 0
+//				&& strcmp(pkt[i].dest_mac_addr, dest_mac_addr) == 0
+//				&& pkt[i].type == type
+//				&& pkt[i].packet_number == packet_number) {
+//			found = 1;
+//			break;
+//		}
+//		if (pkt[i].count == 0) {
+//			break;
+//		}
+//	}
+////	printf("[%s]Found = %d ",currhostname,found);
+//	if (found == -1) {
+//		pkt[i].type = type;
+//		pkt[i].count = 1;
+//		strcpy(pkt[i].src_mac_addr, src_mac_addr);
+//		strcpy(pkt[i].dest_mac_addr, dest_mac_addr);
+//		pkt[i].packet_number = packet_number;
+//	}
+//	printf(
+//			"[%s] Filled Value %d and found = %d and packet number = %d for mac = ",
+//			currhostname, i, found,packet_number);
+//	display_mac_addr(src_mac_addr);
+//	printf("\n");
+//	return found;
 }
 //int remove_pkt_entry(duplicate_packet* pkt,char* mac_addr,data_type type){
 //
