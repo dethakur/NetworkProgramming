@@ -228,13 +228,14 @@ int populate_server_details(struct server_details* serv) {
 }
 
 void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
-		data_type type, frame_head* header) {
+		data_type type,int force_flag,  frame_head* header) {
 	bzero(header, sizeof(frame_head));
 	strcpy(header->src_ip, src_ip);
 	strcpy(header->dest_ip, dest_ip);
 	header->hop_count = hops;
 	header->bc_id = b_id;
 	header->type = type;
+	header->force_flag = force_flag;
 }
 
 void set_ip(char *host, char *ip) {

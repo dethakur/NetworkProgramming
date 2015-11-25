@@ -55,6 +55,7 @@ struct frame_header {
 	int hop_count;
 	int bc_id;
 	char msg[100];
+	int force_flag;
 	data_type type;
 }__attribute((packed));
 typedef struct frame_header frame_head;
@@ -91,7 +92,7 @@ int source_ip_cmp(char*,struct server_details*,int);
 int source_mac_cmp(char*,struct server_details*,int);
 int should_update_rt(routing_table*, frame_head*);
 int populate_server_details(struct server_details*);
-void populate_frame_header(char*,char*,int,int,data_type,frame_head*);
+void populate_frame_header(char*,char*,int,int,data_type,int,frame_head*);
 
 int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
 		char *src_port, char *msg, int flag, struct sockaddr_un * odr_addr_ptr);
