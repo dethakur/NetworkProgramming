@@ -23,4 +23,4 @@ void process_frame(char*);
 void send_payload(char*, char*, data_type,char*);
 void send_rreq(int, int, int, char*, char*);
 static server_buf buffer[100];
-static duplicate_packet dup_packet[1000];
+static duplicate_packet dup_packet[10];
