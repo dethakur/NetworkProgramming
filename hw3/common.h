@@ -12,6 +12,8 @@
 #define MAX_MSG_LEN 50
 #define MAX_VM_NAME_LEN 10
 
+static char currhostname[50] = "";
+
 struct peer_info {
 	char dest_port[100];
 	char dest_ip[INET_ADDRSTRLEN];
@@ -37,6 +39,15 @@ struct server_buf{
 	int count;
 };
 typedef struct server_buf server_buf;
+
+struct duplicate_packet{
+	char src_mac_addr[6];
+	char dest_mac_addr[6];
+	data_type type;
+	int count;
+	int packet_number;
+};
+typedef struct duplicate_packet duplicate_packet;
 
 struct frame_header {
 	char src_ip[IP_LEN];
@@ -89,3 +100,4 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 void set_ip(char *host, char *ip);
 void set_this_ip(char *this_ip);
 void get_data_from_server(frame_head *header_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd);
+int check_duplicate_pac(duplicate_packet*,char*,char*,data_type,int);

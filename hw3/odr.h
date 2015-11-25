@@ -13,7 +13,9 @@ static routing_table table;
 static int broadcast_id = 1;
 static int rawfd, dgramfd;
 static struct sockaddr_un serveraddr;
-char currhostname[50] = "";
+
+
+
 
 void send_rreq(int, int, int, char*, char*);
 void send_packet(char*, char*, int, int, frame_head*);
@@ -21,3 +23,4 @@ void process_frame(char*);
 void send_payload(char*, char*, data_type,char*);
 void send_rreq(int, int, int, char*, char*);
 static server_buf buffer[100];
+static duplicate_packet dup_packet[1000];

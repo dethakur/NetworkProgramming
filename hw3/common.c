@@ -1,7 +1,7 @@
 #include "common.h"
 
 void display_header(frame_head* head) {
-	printf("Src Ip = %s \t", head->src_ip);
+	printf("[%s] Src Ip = %s \t", currhostname, head->src_ip);
 	printf("Dest Ip = %s \t", head->dest_ip);
 	printf("Hop count = %d \t", head->hop_count);
 	//	printf("BroadCast Id = %d \t", head->bc_id);
@@ -76,25 +76,18 @@ void push_data_to_buf(server_buf* buf, struct peer_info peer_info) {
 		if (buf[i].count == 0) {
 			break;
 		}
-		//		if (strcmp(buf[i].peer_info.dest_ip, ip) == 0) {
-		//			break;
-		//		}
+
 	}
-	printf("Destip pushed to buffer = %s", peer_info.dest_ip);
 	memcpy(&buf[i].peer_info, &peer_info, sizeof(struct peer_info));
 	buf[i].count = 1;
-	//	if (buf[i].count == 0) {
-	//		buf[i].count += 1;
-	//		strcpy(buf[i].ip, ip);
-	//	} else {
-	//		buf[i].count += 1;
-	//	}
+
 }
 
 void display_routing_table(routing_table* table) {
 	int i = 0;
-	printf("Displaying Routing Table----\n");
-	printf("Dest Ip\t\t\tHops\tTS\t\t\tNext Hop\t\t\tB ID\n");
+	printf("[%s] Displaying Routing Table----\n", currhostname);
+	printf("[%s] Dest Ip\t\t\tHops\tTS\t\t\tNext Hop\t\t\tB ID\n",
+			currhostname);
 	for (i = 0; i < ROUTING_TABLE_SIZE; i++) {
 		if (table->row[i].is_filled != 0) {
 			printf("%s\t\t%d\t%ld\t\t", table->row[i].dest_ip,
@@ -127,8 +120,8 @@ void update_routing_table(routing_table* table, frame_head* head,
 	int row_index = get_row_entry(table, head->src_ip);
 
 	if (row_index == -1) {
-		printf("No entry for IP = %s. Making entry in Routing Table\n",
-				head->src_ip);
+		printf("[%s] No entry for IP = %s. Making entry in Routing Table\n",
+				currhostname, head->src_ip);
 		int index = get_empty_row(table);
 		table->row[index].is_filled = 1;
 		memcpy(table->row[index].dest_ip, head->src_ip, IP_LEN);
@@ -140,16 +133,18 @@ void update_routing_table(routing_table* table, frame_head* head,
 		table->row[index].hop_count = head->hop_count;
 
 	} else {
-		printf("Source IP = %s EXISTS in Routing Table\n", head->src_ip);
+		printf("[%s] Source IP = %s EXISTS in Routing Table\n", currhostname,
+				head->src_ip);
 		int b_id = table->row[row_index].broadcast_id;
 		int delete = -1;
 		if (head->bc_id > b_id) {
-			printf("B ID is lesser = %d than %d\n", b_id, head->bc_id);
+			printf("[%s] BID is lesser = %d than %d\n", currhostname, b_id,
+					head->bc_id);
 			table->row[row_index].broadcast_id = head->bc_id;
 			delete = 1;
 		} else {
 			if (table->row[row_index].hop_count > head->hop_count) {
-				printf("Hop count is lesser = %d than %d\n",
+				printf("[%s] Hop count is lesser = %d than %d\n", currhostname,
 						table->row[row_index].hop_count, head->hop_count);
 				table->row[row_index].hop_count = head->hop_count;
 				delete = 1;
@@ -199,8 +194,8 @@ int populate_server_details(struct server_details* serv) {
 	//	serv[1] = 0;
 
 	for (hwahead = hwa = Get_hw_addrs(); hwa != NULL; hwa = hwa->hwa_next) {
-		if ((strcmp(hwa->if_name, "lo") == 0) || (strcmp(hwa->if_name, "eth0")
-				== 0))
+		if ((strcmp(hwa->if_name, "lo") == 0)
+				|| (strcmp(hwa->if_name, "eth0") == 0))
 			continue;
 
 		prflag = 0;
@@ -245,21 +240,21 @@ void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
 void set_ip(char *host, char *ip) {
 	char ipmap[12][20];
 
-	strcpy(ipmap[0], "dontcare" );
-	strcpy(ipmap[1], "192.168.10.1" );
-	strcpy(ipmap[2], "192.168.10.2" );
-	strcpy(ipmap[3], "192.168.10.3" );
-	strcpy(ipmap[4], "192.168.11.4" );
-	strcpy(ipmap[5], "192.168.11.5" );
-	strcpy(ipmap[6], "192.168.11.6" );
-	strcpy(ipmap[7], "192.168.12.7" );
-	strcpy(ipmap[8], "192.168.12.8" );
-	strcpy(ipmap[9], "192.168.13.9" );
-	strcpy(ipmap[10], "192.168.13.10" );
-	strcpy(ipmap[11], "" );
+	strcpy(ipmap[0], "dontcare");
+	strcpy(ipmap[1], "192.168.10.1");
+	strcpy(ipmap[2], "192.168.10.2");
+	strcpy(ipmap[3], "192.168.10.3");
+	strcpy(ipmap[4], "192.168.11.4");
+	strcpy(ipmap[5], "192.168.11.5");
+	strcpy(ipmap[6], "192.168.11.6");
+	strcpy(ipmap[7], "192.168.12.7");
+	strcpy(ipmap[8], "192.168.12.8");
+	strcpy(ipmap[9], "192.168.13.9");
+	strcpy(ipmap[10], "192.168.13.10");
+	strcpy(ipmap[11], "");
 
 	// host will be like vm1, vm2 etc.
-	int index = atoi(host+2);
+	int index = atoi(host + 2);
 	strcpy(ip, ipmap[index]);
 //	struct hostent * hptr = gethostbyname(host);
 //	char **pptr = hptr->h_addr_list;
@@ -315,14 +310,16 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 	strcpy(src_port, pinfo.src_port);
 }
 
-void get_data_from_server(frame_head *header_ptr, struct sockaddr_un *servaddr_ptr, int dgramfd){
+void get_data_from_server(frame_head *header_ptr,
+		struct sockaddr_un *servaddr_ptr, int dgramfd) {
 	struct peer_info pinfo;
 	char buf[20] = "getTime";
 	char recvline[MAXLINE];
 	int size = sizeof(struct peer_info);
 
 //	sendto(dgramfd, buf, strlen(buf), 0, servaddr_ptr, sizeof(*servaddr_ptr));
-	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", buf, 0, servaddr_ptr);
+	msg_send(dgramfd, "dst_ip", "dst_port", "srcip", "srcport", buf, 0,
+			servaddr_ptr);
 
 	struct sockaddr_un temp_servaddr;
 	socklen_t temp_odraddrlen;
@@ -332,5 +329,39 @@ void get_data_from_server(frame_head *header_ptr, struct sockaddr_un *servaddr_p
 	memcpy(&pinfo, recvline, size);
 
 	strcpy(header_ptr->msg, pinfo.msg);
-	printf("Received response from server %s\n", header_ptr->msg);
+	printf("[%s] Received response from server %s\n", currhostname,
+			header_ptr->msg);
 }
+int check_duplicate_pac(duplicate_packet* pkt, char* src_mac_addr,
+		char* dest_mac_addr, data_type type, int packet_number) {
+	int i = 0;
+	int found = -1;
+	for (i = 0; i < 1000; i++) {
+		if (strcmp(pkt[i].src_mac_addr, src_mac_addr) == 0
+				&& strcmp(pkt[i].dest_mac_addr, dest_mac_addr) == 0
+				&& pkt[i].type == type
+				&& pkt[i].packet_number == packet_number) {
+			found = 1;
+			break;
+		}
+		if (pkt[i].count == 0) {
+			break;
+		}
+	}
+	if (found == -1) {
+		pkt[i].type = type;
+		pkt[i].count = 1;
+		strcpy(pkt[i].src_mac_addr, src_mac_addr);
+		strcpy(pkt[i].dest_mac_addr, dest_mac_addr);
+		pkt[i].packet_number = packet_number;
+	}
+	printf("[%s] Filled Value %d and found = %d for mac = ", currhostname, i,
+			found);
+	display_mac_addr(src_mac_addr);
+	printf("\n");
+	return found;
+}
+//int remove_pkt_entry(duplicate_packet* pkt,char* mac_addr,data_type type){
+//
+//}
+
