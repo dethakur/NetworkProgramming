@@ -4,6 +4,7 @@
 void respond(int sockfd) {
 	char buff[100] = "", recvline[1000] = "";
 	time_t ticks;
+	static int bc_id = 0;
 
 	char this_ip[INET_ADDRSTRLEN] = "";
 	set_this_ip(this_ip);
@@ -25,14 +26,17 @@ void respond(int sockfd) {
 			char client_ip[100];
 			char client_port[100];
 			msg_recv(sockfd, recvline, client_ip, client_port, &odraddr);
-
-			printf("Received request: %s from client ip: %s, port: %s\n",
-					recvline, client_ip, client_port);
-
+			int bid = atoi(recvline);
 			ticks = time(NULL);
 			snprintf(buff, sizeof(buff), "%.24s", ctime(&ticks));
-			printf("Sending response: '%s' to client ip: %s, port: %s\n", buff,
-					client_ip, client_port);
+			if (bc_id < bid) {
+				printf(
+						"Received request: getTime of BID = %s from client ip: %s, port: %s\n",
+						recvline, client_ip, client_port);
+				bc_id = bid;
+				printf("Sending response: '%s' to client ip: %s, port: %s\n",
+						buff, client_ip, client_port);
+			}
 
 			//			sendto(sockfd, buff, strlen(buff), 0, &odraddr, sizeof(odraddr));
 			msg_send(sockfd, client_ip, client_port, this_ip, DOMAIN_SOCK_PATH,

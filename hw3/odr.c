@@ -55,13 +55,13 @@ int main(int argc, char* argv[]) {
 		} else if (FD_ISSET(dgramfd, &rset)) {
 			char output_client[MAXLINE];
 //			printf("Request from client received!!  = %d\n", count);
+			broadcast_id++;
 			packet_counter = packet_counter + 1;
 			Recvfrom(dgramfd, output_client, MAXLINE, 0, NULL, NULL);
 			struct peer_info peer_info;
 //			bzero(&peer_info,sizeof(struct peer_info));
 
 			memcpy(&peer_info, output_client, sizeof(struct peer_info));
-			peer_info.flag = 1;
 			printf("[%s] Dest IP = %s and force flag = %d\n", currhostname,
 					peer_info.dest_ip,peer_info.flag);
 			int i = 0;
@@ -113,18 +113,12 @@ void process_frame(char* output) {
 	memcpy(&header, output, sizeof(frame_head));
 	if (header.force_flag == 1) {
 		printf("[%s] Force Route bit is set. Forcing Reroute \n", currhostname);
-		init_routing_table(&table);
 	}
-//	printf("DATA RECEIVED ");
-//	display_header(&header);
+
+	display_header(&header);
 
 	int update = 0;
 	int duplicate = 0;
-//	if (check_duplicate_pac(&dup_packet, src_mac, dest_mac, header.type, 0)
-//			!= -1) {
-//		duplicate = 1;
-//
-//	}
 
 	int src_index = source_ip_cmp(header.src_ip, serv, number_of_interfaces);
 	if (header.type != payload_req && header.type != payload_resp) {
@@ -148,9 +142,9 @@ void process_frame(char* output) {
 		if (index != -1) {
 			printf("[%s] Dest IP is for this VM!\n", currhostname);
 //			printf("Now SENDING RREP\n");
-			send_rrep(rawfd, broadcast_id, 1, header.src_ip, header.dest_ip);
+			send_rrep(rawfd, header.bc_id, 1, header.src_ip, header.dest_ip);
 		} else if (row_entry != -1) {
-			send_rrep(rawfd, broadcast_id, 1, header.src_ip, header.dest_ip);
+			send_rrep(rawfd, header.bc_id, 1, header.src_ip, header.dest_ip);
 			printf("[%s] Destination Exists in the table!\n", currhostname);
 
 		}
@@ -218,9 +212,10 @@ void process_frame(char* output) {
 
 void send_payload(char* src_ip, char* dest_ip, data_type payload, char* msg,
 		int force_flag) {
-	printf("Force flag == %d\N", force_flag);
+//	printf("Force flag == %d\N", force_flag);
 //	char *dest_ip = &peer_info.dest_ip;
 //	printf("Sending Payload to %s with data = %s\n", dest_ip,msg);
+
 	int t_i = get_row_entry(&table, dest_ip);
 	if (t_i == -1) {
 		printf("[%s] Dest IP %s not in RT. Making RREQ!\n", currhostname,
@@ -234,7 +229,7 @@ void send_payload(char* src_ip, char* dest_ip, data_type payload, char* msg,
 		for (i = 0; i < number_of_interfaces; i++) {
 			frame_head header;
 			populate_frame_header(src_ip, dest_ip, table.row[t_i].hop_count,
-					table.row[t_i].broadcast_id, payload, force_flag, &header);
+					broadcast_id, payload, force_flag, &header);
 			strcpy(&header.msg, msg);
 
 			send_packet(table.row[t_i].next_hop_mac, serv[i].mac, serv[i].index,
@@ -279,8 +274,6 @@ void send_packet(char* dest_mac, char* src_mac, int if_index, int sockfd,
 		frame_head* header) {
 
 //	printf("DATA SENT ");
-	display_header(header);
-
 	int j;
 	struct sockaddr_ll socket_address;
 	void* buffer = (void*) malloc(ETH_FRAME_LEN);

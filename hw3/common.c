@@ -1,9 +1,9 @@
 #include "common.h"
 
 void display_header(frame_head* head) {
-	printf("[%s] Src Ip = %s \t", currhostname, head->src_ip);
+	printf("Src Ip = %s \t", head->src_ip);
 	printf("Dest Ip = %s \t", head->dest_ip);
-	printf("Hop count = %d \t", head->hop_count);
+	printf("HOPS = %d \t", head->hop_count);
 	//	printf("BroadCast Id = %d \t", head->bc_id);
 	if (head->type == rreq) {
 		printf("RREQ\n");
@@ -274,8 +274,8 @@ int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
 	gethostname(hostname, MAX_VM_NAME_LEN);
 
 	struct peer_info pinfo;
-	pinfo.flag = flag;
 	bzero(&pinfo, sizeof(pinfo));
+	pinfo.flag = flag;
 	strcpy(pinfo.dest_port, dest_port);
 	strncpy(pinfo.dest_ip, dest_ip, INET_ADDRSTRLEN);
 	strcpy(pinfo.src_port, src_port);
@@ -313,8 +313,10 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 
 void get_data_from_server(frame_head *header_ptr,
 		struct sockaddr_un *servaddr_ptr, int dgramfd) {
+	static int b_id = 0;
 	struct peer_info pinfo;
-	char buf[20] = "getTime";
+	char buf[20] = "";
+	sprintf(buf, "%d", header_ptr->bc_id);
 	char recvline[MAXLINE];
 	int size = sizeof(struct peer_info);
 
@@ -330,8 +332,11 @@ void get_data_from_server(frame_head *header_ptr,
 	memcpy(&pinfo, recvline, size);
 
 	strcpy(header_ptr->msg, pinfo.msg);
-	printf("[%s] Received response from server %s\n", currhostname,
-			header_ptr->msg);
+	if(header_ptr->bc_id > b_id){
+		printf("[%s] Received response from server %s with bid = %d and b_id = %d\n", currhostname,
+			header_ptr->msg,header_ptr->bc_id,b_id);
+		b_id = header_ptr->bc_id;
+	}
 }
 int check_duplicate_pac(duplicate_packet* pkt, char* src_mac_addr,
 		char* dest_mac_addr, data_type type, int packet_number) {
