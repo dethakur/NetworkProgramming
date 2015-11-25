@@ -37,12 +37,11 @@ int main(int argc, char **argv) {
 	char sendline[20] = "GetMeTime";
 	char recvline[30] = "";
 
-	//todo: 1 extra sendto added here. Not sure why the server does not get the client
-	// socket details properly on the first call to recvfrom.
-	//	Sendto(sockfd, sendline, strlen(sendline), 0, &odraddr, sizeof(odraddr));
-//	msg_send(sockfd, "ip", RAW_SERVER_PROTO, this_ip, client_port, sendline, 0,
-//			&odraddr);
+	char hostname[MAX_VM_NAME_LEN] = "";
+	gethostname(hostname, MAX_VM_NAME_LEN);
 
+
+	fd_set rset;
 	char arg[20] = "";
 	while (1) {
 		printf("\n*** Choose a vm (vm1-vm10) ***\n");
@@ -54,16 +53,29 @@ int main(int argc, char **argv) {
 		printf("IP address for vm:%s is %s\n", arg, ip);
 
 		printf("Sending request to server vm:%s\n", arg);
-		//		Sendto(sockfd, sendline, strlen(sendline), 0, &odraddr,
-		//				sizeof(odraddr));
 		msg_send(sockfd, ip, DOMAIN_SOCK_PATH, this_ip, client_port, sendline,
 				0, &odraddr);
-		printf("Waiting for reply\n");
-		//		Recvfrom(sockfd, recvline, 40, 0, &odraddr, &odraddrlen);
-		char src_ip[100];
-		char src_port[100];
-		msg_recv(sockfd, recvline, src_ip, src_port, &odraddr);
-		printf("Received response from server:%s\n", recvline);
+		printf("~~ Waiting for reply ~~\n");
+	    struct timeval timeout;
+//	    timeout.tv_usec = 1;
+	    timeout.tv_sec = 2;
+		FD_ZERO(&rset);
+		FD_SET(sockfd, &rset);
+		select(sockfd + 1, &rset, NULL, NULL, &timeout);
+
+
+		if (FD_ISSET(sockfd, &rset)) {
+			char src_ip[100];
+			char src_port[100];
+			msg_recv(sockfd, recvline, src_ip, src_port, &odraddr);
+			printf("Client at node vm %s received from %s %s\n", hostname, arg, recvline);
+		} else {
+			printf("Client at node vm %s timeout on response from %s\n", hostname, arg);
+			printf("Re-sending request to server vm:%s\n", arg);
+			msg_send(sockfd, ip, DOMAIN_SOCK_PATH, this_ip, client_port, sendline,
+					1, &odraddr);
+
+		}
 	}
 
 	printf("unlinking %s\n", client_port);

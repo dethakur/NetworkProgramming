@@ -278,6 +278,7 @@ int msg_send(int socket, char *dest_ip, char * dest_port, char * src_ip,
 	gethostname(hostname, MAX_VM_NAME_LEN);
 
 	struct peer_info pinfo;
+	pinfo.flag = flag;
 	bzero(&pinfo, sizeof(pinfo));
 	strcpy(pinfo.dest_port, dest_port);
 	strncpy(pinfo.dest_ip, dest_ip, INET_ADDRSTRLEN);

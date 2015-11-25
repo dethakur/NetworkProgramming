@@ -60,8 +60,8 @@ int main(int argc, char* argv[]) {
 			memcpy(&peer_info, output_client, sizeof(struct peer_info));
 			printf("Dest IP = %s\n", peer_info.dest_ip);
 			int i = 0;
+			push_data_to_buf(&buffer, peer_info);
 			for (i = 0; i < number_of_interfaces; i++) {
-				push_data_to_buf(&buffer, peer_info);
 				strcpy(peer_info.dest_ip, peer_info.dest_ip);
 				send_payload(serv[i].ip, peer_info.dest_ip, payload_req," ");
 //				break;

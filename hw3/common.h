@@ -19,6 +19,7 @@ struct peer_info {
 	char src_ip[INET_ADDRSTRLEN];
 	char msg[MAX_MSG_LEN];
 	char source_vm[MAX_VM_NAME_LEN];
+	int flag;
 }__attribute((packed));
 
 typedef enum {
