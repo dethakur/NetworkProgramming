@@ -13,7 +13,7 @@ static routing_table table;
 static int broadcast_id = 1;
 static int rawfd, dgramfd;
 static struct sockaddr_un serveraddr;
-
+volatile static int packet_counter = 0;
 
 
 

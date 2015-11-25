@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
 				0, &odraddr);
 		printf("~~ Waiting for reply ~~\n");
 	    struct timeval timeout;
+	    bzero(&timeout,sizeof(struct timeval));
 //	    timeout.tv_usec = 1;
 	    timeout.tv_sec = 2;
 		FD_ZERO(&rset);
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
 			printf("Client at node vm %s received from %s %s\n", hostname, arg, recvline);
 		} else {
 			printf("Client at node vm %s timeout on response from %s\n", hostname, arg);
-			printf("Re-sending request to server vm:%s\n", arg);
+			printf("Re-sending request to server vm:%s with force flag\n", arg);
 			msg_send(sockfd, ip, DOMAIN_SOCK_PATH, this_ip, client_port, sendline,
 					1, &odraddr);
 

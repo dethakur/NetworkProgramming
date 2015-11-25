@@ -1,7 +1,7 @@
 #include "odr.h"
 
 //void send_packet(char* dest_ip,char* data);
-static int packet_counter = 0;
+
 int main(int argc, char* argv[]) {
 	gethostname(currhostname, 50);
 
@@ -35,37 +35,50 @@ int main(int argc, char* argv[]) {
 	bzero(output, ETH_FRAME_LEN);
 
 	int count = 1;
+	int time_val = atoi(argv[1]);
 	while (1) {
 		FD_ZERO(&rset);
 		FD_SET(rawfd, &rset);
 		FD_SET(dgramfd, &rset);
 //		printf("Waiting now!\n");
+		struct timeval timeout;
+		bzero(&timeout, sizeof(struct timeval));
+		timeout.tv_sec = time_val;
 
-		Select(max_val, &rset, NULL, NULL, NULL);
+		Select(max_val, &rset, NULL, NULL, &timeout);
 		bzero(output, ETH_FRAME_LEN);
 		if (FD_ISSET(rawfd, &rset)) {
 //			printf("Ethernet frame received!!  = %d\n", count);
 			Recvfrom(rawfd, output, ETH_FRAME_LEN, 0, NULL, NULL);
 			process_frame(output);
 			count++;
-		}
-		if (FD_ISSET(dgramfd, &rset)) {
+		} else if (FD_ISSET(dgramfd, &rset)) {
 			char output_client[MAXLINE];
 //			printf("Request from client received!!  = %d\n", count);
+			packet_counter = packet_counter + 1;
 			Recvfrom(dgramfd, output_client, MAXLINE, 0, NULL, NULL);
 			struct peer_info peer_info;
 			memcpy(&peer_info, output_client, sizeof(struct peer_info));
 			printf("[%s] Dest IP = %s\n", currhostname, peer_info.dest_ip);
 			int i = 0;
-			packet_counter++;
 			push_data_to_buf(&buffer, peer_info);
 			for (i = 0; i < number_of_interfaces; i++) {
 				strcpy(peer_info.dest_ip, peer_info.dest_ip);
+				if (peer_info.flag == 1) {
+					printf("[Client][%s] Force flag received. Sending RREQ!",
+							currhostname);
+					init_routing_table(&table);
+				}
 				send_payload(serv[i].ip, peer_info.dest_ip, payload_req, " ");
 //				break;
 			}
 
 			count++;
+		} else {
+			printf("[%s] Stale value reached. Clearing routing table! \n",
+					currhostname);
+			init_routing_table(&table);
+//			init_buffer(buffer, 100);
 		}
 
 	}
@@ -97,6 +110,12 @@ void process_frame(char* output) {
 //	display_header(&header);
 
 	int update = 0;
+	int duplicate = 0;
+	if (check_duplicate_pac(&dup_packet, src_mac,
+			dest_mac, header.type,0) != -1) {
+		duplicate = 1;
+
+	}
 
 	int src_index = source_ip_cmp(header.src_ip, serv, number_of_interfaces);
 	if (header.type != payload_req && header.type != payload_resp) {
@@ -111,7 +130,9 @@ void process_frame(char* output) {
 		int row_entry = get_row_entry(&table, header.dest_ip);
 
 		if (index == -1 && row_entry == -1 && update == 1) {
-			printf("[%s] Sending RREQ \n", currhostname);
+			if(duplicate == 1){
+				printf("[%s] Sending RREQ \n", currhostname);
+			}
 			send_rreq(rawfd, header.bc_id, header.hop_count + 1, header.src_ip,
 					header.dest_ip);
 		}
@@ -153,13 +174,13 @@ void process_frame(char* output) {
 				send_payload(header.dest_ip, header.src_ip, payload_resp,
 						&header.msg);
 			} else {
-				printf("[%s] Pay load response received by destination!\n",
-						currhostname);
 				int i = 0;
 				for (i = 0; i < 100; i++) {
 					//	printf("Comparing %s to %s = %d\n",header.src_ip,buffer[i].peer_info.dest_ip,strcmp(header.src_ip,buffer[i].peer_info.dest_ip));
 					if ((strcmp(header.src_ip, buffer[i].peer_info.dest_ip) == 0)
 							&& buffer[i].count != 0) {
+						printf("[%s] Pay load response received by destination!\n",
+												currhostname);
 						printf(
 								"[%s] Found client to send reply with msg = %s\n",
 								currhostname, header.msg);
@@ -203,11 +224,10 @@ void send_payload(char* src_ip, char* dest_ip, data_type payload, char* msg) {
 			populate_frame_header(src_ip, dest_ip, table.row[t_i].hop_count,
 					table.row[t_i].broadcast_id, payload, &header);
 			strcpy(&header.msg, msg);
-			if (check_duplicate_pac(&dup_packet, table.row[t_i].next_hop_mac,serv[i].mac,
-					payload, packet_counter) != -1) {
-				send_packet(table.row[t_i].next_hop_mac, serv[i].mac,
-						serv[i].index, rawfd, &header);
-			}
+
+			send_packet(table.row[t_i].next_hop_mac, serv[i].mac, serv[i].index,
+					rawfd, &header);
+
 		}
 
 	}
@@ -233,11 +253,10 @@ void send_rrep(int sockfd, int b_id, int h_count, char* dest_ip, char* src_ip) {
 	for (i = 0; i < number_of_interfaces; i++) {
 		frame_head header;
 		populate_frame_header(src_ip, dest_ip, h_count, b_id, rrep, &header);
-		if (check_duplicate_pac(&dup_packet, table.row[t_i].next_hop_mac,"", rreq,
-				packet_counter) != -1) {
-			send_packet(table.row[t_i].next_hop_mac, serv[i].mac, serv[i].index,
-					sockfd, &header);
-		}
+
+		send_packet(table.row[t_i].next_hop_mac, serv[i].mac, serv[i].index,
+				sockfd, &header);
+
 	}
 }
 
