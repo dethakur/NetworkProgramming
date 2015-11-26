@@ -1,0 +1,16 @@
+--- Team Members ---
+Devashish Thakur
+Kaushik Devarajaiah
+
+Each client opens a temporary Unix Datagram socket, which is akin to a port in TCP.
+The client then asks the user for an input VM (value can be vm1 to vm10) which will cause a GetTime request to be sent to the server running on that VM. 
+The client request timeout period is 2 seconds.
+
+Example of client input below
+*** Choose a vm (vm1-vm10) ***
+vm3
+
+The server opens a Unix Datagram socket with the name /tmp/deva_kau which is used by the ODR process to communicate with the same.
+
+ 
+
