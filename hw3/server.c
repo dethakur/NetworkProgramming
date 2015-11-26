@@ -38,8 +38,8 @@ void respond(int sockfd, char *hostname) {
 						"Received request: getTime of BID = %s from client ip: %s, port: %s\n",
 						recvline, client_ip, client_port);
 				bc_id = bid;
-				printf("Server at node: '%s' responding to request from VM: %s\n",
-						hostname, src_vm);
+				printf("Server at node: '%s' responding to request from VM: %s with response %s\n",
+						hostname, src_vm, buff);
 			}
 
 			//			sendto(sockfd, buff, strlen(buff), 0, &odraddr, sizeof(odraddr));
