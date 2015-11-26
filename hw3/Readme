@@ -17,6 +17,8 @@ Received request: getTime of BID = 5 from client ip: srcip, port: srcport
 Server at node: 'vm3' responding to request from VM: vm1 with response Wed Nov 25 19:29:33 2015
 
 ODR
+[Note] To start odr, provide staleness argument (number of seconds) as an int comman line argument.
+
 The odr is a process which runs on each machine. It opens two sockets. It receives requests from the clients and server on SOCK_DGRAM 
 , where as communication between odr's happen by SOCK_RAW.
 
