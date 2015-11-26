@@ -173,7 +173,9 @@ void process_frame(char* output) {
 			if (header.type == payload_req) {
 				printf("[%s] Pay load Request received by destination!\n",
 						currhostname);
-				get_data_from_server(&header, &serveraddr, dgramfd);
+				char source_vm[10];
+				ip_to_vm(header.src_ip, source_vm);
+				get_data_from_server(&header, &serveraddr, dgramfd, source_vm);
 				send_payload(header.dest_ip, header.src_ip, payload_resp,
 						&header.msg, 0);
 			} else {

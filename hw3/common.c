@@ -1,5 +1,7 @@
 #include "common.h"
 
+
+
 void display_header(frame_head* head) {
 	printf("Src Ip = %s \t", head->src_ip);
 	printf("Dest Ip = %s \t", head->dest_ip);
@@ -238,6 +240,12 @@ void populate_frame_header(char* src_ip, char* dest_ip, int hops, int b_id,
 	header->force_flag = force_flag;
 }
 
+void ip_to_vm(char *ip, char *vm) {
+	strcpy(vm, "vm");
+        strcat(vm, ip + 11);
+	printf("IPADDR %s converts to vm %s\n", ip, vm);
+}
+
 void set_ip(char *host, char *ip) {
 	char ipmap[12][20];
 
@@ -312,11 +320,13 @@ int msg_recv(int socket, char *msg, char *src_ip, char *src_port,
 }
 
 void get_data_from_server(frame_head *header_ptr,
-		struct sockaddr_un *servaddr_ptr, int dgramfd) {
+		struct sockaddr_un *servaddr_ptr, int dgramfd, char * source_vm) {
 	static int b_id = 0;
 	struct peer_info pinfo;
-	char buf[20] = "";
+	char buf[50] = "";
 	sprintf(buf, "%d", header_ptr->bc_id);
+	strcat(buf, "#");
+	strcat(buf, source_vm);
 	char recvline[MAXLINE];
 	int size = sizeof(struct peer_info);
 

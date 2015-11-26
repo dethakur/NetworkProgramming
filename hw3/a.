@@ -1,0 +1,13 @@
+
+	strcpy(ipmap[0], "dontcare");
+	strcpy(ipmap[1], "192.168.10.1");
+	strcpy(ipmap[2], "192.168.10.2");
+	strcpy(ipmap[3], "192.168.10.3");
+	strcpy(ipmap[4], "192.168.11.4");
+	strcpy(ipmap[5], "192.168.11.5");
+	strcpy(ipmap[6], "192.168.11.6");
+	strcpy(ipmap[7], "192.168.12.7");
+	strcpy(ipmap[8], "192.168.12.8");
+	strcpy(ipmap[9], "192.168.13.9");
+	strcpy(ipmap[10], "192.168.13.10");
+	strcpy(ipmap[11], "");

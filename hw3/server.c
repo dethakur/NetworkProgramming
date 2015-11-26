@@ -1,7 +1,7 @@
 #include "unp.h"
 #include "common.h"
 
-void respond(int sockfd) {
+void respond(int sockfd, char *hostname) {
 	char buff[100] = "", recvline[1000] = "";
 	time_t ticks;
 	static int bc_id = 0;
@@ -26,7 +26,11 @@ void respond(int sockfd) {
 			char client_ip[100];
 			char client_port[100];
 			msg_recv(sockfd, recvline, client_ip, client_port, &odraddr);
+			int k;
+			for(k = 0; k < strlen(recvline) && recvline[k] != '#'; k++) {}
+			recvline[k] = '\0';
 			int bid = atoi(recvline);
+			char *src_vm = recvline + k + 1;
 			ticks = time(NULL);
 			snprintf(buff, sizeof(buff), "%.24s", ctime(&ticks));
 			if (bc_id < bid) {
@@ -34,8 +38,8 @@ void respond(int sockfd) {
 						"Received request: getTime of BID = %s from client ip: %s, port: %s\n",
 						recvline, client_ip, client_port);
 				bc_id = bid;
-				printf("Sending response: '%s' to client ip: %s, port: %s\n",
-						buff, client_ip, client_port);
+				printf("Server at node: '%s' responding to request from VM: %s\n",
+						hostname, src_vm);
 			}
 
 			//			sendto(sockfd, buff, strlen(buff), 0, &odraddr, sizeof(odraddr));
@@ -52,6 +56,9 @@ int main(int argc, char **argv) {
 	socklen_t len;
 	struct sockaddr_un addr1, addr2;
 
+	char hostname[MAX_VM_NAME_LEN] = "";
+	gethostname(hostname, MAX_VM_NAME_LEN);
+
 	sockfd = Socket(AF_LOCAL, SOCK_DGRAM, 0);
 	unlink(DOMAIN_SOCK_PATH); /* OK if this fails */
 
@@ -62,7 +69,7 @@ int main(int argc, char **argv) {
 	Bind(sockfd, (SA *) &addr1, SUN_LEN(&addr1));
 	printf("Bound\n");
 
-	respond(sockfd);
+	respond(sockfd, hostname);
 
 	unlink(DOMAIN_SOCK_PATH);
 }
