@@ -12,5 +12,7 @@ vm3
 
 The server opens a Unix Datagram socket with the name /tmp/deva_kau which is used by the ODR process to communicate with the same.
 
- 
+Example of server response
+Received request: getTime of BID = 5 from client ip: srcip, port: srcport
+Server at node: 'vm3' responding to request from VM: vm1 with response Wed Nov 25 19:29:33 2015
 
