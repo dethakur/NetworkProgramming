@@ -1,0 +1,196 @@
+Start Application on VMs: 
+vm1 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.21
+         HW addr = 00:0c:29:49:3f:5b 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.10.1
+         HW addr = 00:0c:29:49:3f:65 
+         interface index = 3
+
+eth2 :
+         IP addr = 192.168.12.1
+         HW addr = 00:0c:29:49:3f:6f 
+         interface index = 4
+
+vm2 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.22
+         HW addr = 00:0c:29:d9:08:ec 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.10.2
+         HW addr = 00:0c:29:d9:08:f6 
+         interface index = 3
+
+vm3 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.23
+         HW addr = 00:0c:29:a3:1f:19 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.10.3
+         HW addr = 00:0c:29:a3:1f:23 
+         interface index = 3
+
+eth2 :
+         IP addr = 192.168.11.3
+         HW addr = 00:0c:29:a3:1f:2d 
+         interface index = 4
+
+vm4 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.24
+         HW addr = 00:0c:29:9e:80:73 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.11.4
+         HW addr = 00:0c:29:9e:80:7d 
+         interface index = 3
+
+eth2 :
+         IP addr = 192.168.12.4
+         HW addr = 00:0c:29:9e:80:87 
+         interface index = 4
+
+vm5 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.25
+         HW addr = 00:0c:29:a5:4b:46 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.11.5
+         HW addr = 00:0c:29:a5:4b:50 
+         interface index = 3
+
+vm6 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.26
+         HW addr = 00:0c:29:b5:32:3d 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.11.6
+         HW addr = 00:0c:29:b5:32:47 
+         interface index = 3
+
+eth2 :
+         IP addr = 192.168.14.6
+         HW addr = 00:0c:29:b5:32:51 
+         interface index = 4
+
+vm7 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.27
+         HW addr = 00:0c:29:64:e3:d4 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.12.7
+         HW addr = 00:0c:29:64:e3:de 
+         interface index = 3
+
+vm8 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.28
+         HW addr = 00:0c:29:e1:54:d1 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.12.8
+         HW addr = 00:0c:29:e1:54:db 
+         interface index = 3
+
+vm9 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.29
+         HW addr = 00:0c:29:bb:12:aa 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.13.9
+         HW addr = 00:0c:29:bb:12:b4 
+         interface index = 3
+
+eth2 :
+         IP addr = 192.168.14.9
+         HW addr = 00:0c:29:bb:12:be 
+         interface index = 4
+
+vm10 
+
+lo :
+         IP addr = 127.0.0.1
+
+         interface index = 1
+
+eth0 :
+         IP addr = 130.245.156.20
+         HW addr = 00:0c:29:de:6a:62 
+         interface index = 2
+
+eth1 :
+         IP addr = 192.168.13.10
+         HW addr = 00:0c:29:de:6a:6c 
+         interface index = 3
+

@@ -1,0 +1,29 @@
+--- Team Members ---
+Devashish Thakur
+Kaushik Devarajaiah
+
+Each client opens a temporary Unix Datagram socket, which is akin to a port in TCP.
+The client then asks the user for an input VM (value can be vm1 to vm10) which will cause a GetTime request to be sent to the server running on that VM. 
+The client request timeout period is 2 seconds.
+
+Example of client input below
+*** Choose a vm (vm1-vm10) ***
+vm3
+
+The server opens a Unix Datagram socket with the name /tmp/deva_kau which is used by the ODR process to communicate with the same.
+
+Example of server response
+Received request: getTime of BID = 5 from client ip: srcip, port: srcport
+Server at node: 'vm3' responding to request from VM: vm1 with response Wed Nov 25 19:29:33 2015
+
+ODR
+The odr is a process which runs on each machine. It opens two sockets. It receives requests from the clients and server on SOCK_DGRAM 
+, where as communication between odr's happen by SOCK_RAW.
+
+The function process_frame() processes the request by the ODR's. 
+
+When client sends a request to ODR send_payload method is called. It checks if the DEST IP is in the routing table.
+Else it sends a RREQ asking for a path to destination IP.
+Once a path to destination is found , Payload Request is sent. 
+The destination on receiving Payload Request sends a Payload response by getting timestamp from the server process.
+
