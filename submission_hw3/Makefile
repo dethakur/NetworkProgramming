@@ -7,10 +7,10 @@ LIBS =  -lnsl\
 FLAGS = -g -O2
 CFLAGS = ${FLAGS} -I/home/courses/cse533/Stevens/unpv13e/lib
 
-all: odr server client clean
+all: odr_dev_kau server_dev_kau client_dev_kau clean
 
-odr: get_hw_addrs.o odr.o common.o
-	${CC} ${FLAGS} -o odr odr.o common.o get_hw_addrs.o ${LIBS}
+odr_dev_kau: get_hw_addrs.o odr.o common.o
+	${CC} ${FLAGS} -o odr_dev_kau odr.o common.o get_hw_addrs.o ${LIBS}
 	
 pwhaddr: get_hw_addrs.o prhwaddrs.o
 	${CC} ${CFLAGS} -o prhwaddrs prhwaddrs.o get_hw_addrs.o ${LIBS}
@@ -26,14 +26,14 @@ odr.o: odr.c odr.h common.h hw_addrs.h
 common.o: common.c common.h
 	${CC} ${CFLAGS} -c common.c	
 
-server: server.o common.o
-	${CC} ${FLAGS} -o server server.o get_hw_addrs.o common.o ${LIBS}
+server_dev_kau: server.o common.o
+	${CC} ${FLAGS} -o server_dev_kau server.o get_hw_addrs.o common.o ${LIBS}
 
 server.o: server.c  common.h
 	${CC} ${CFLAGS} -c server.c 
 
-client: client.o common.o
-	${CC} ${FLAGS} -o client client.o get_hw_addrs.o common.o ${LIBS}	
+client_dev_kau: client.o common.o
+	${CC} ${FLAGS} -o client_dev_kau client.o get_hw_addrs.o common.o ${LIBS}	
 	
 client.o: client.c common.h
 	${CC} ${CFLAGS} -c client.c

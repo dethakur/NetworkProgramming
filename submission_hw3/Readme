@@ -1,7 +1,13 @@
 --- Team Members ---
 Devashish Thakur
 Kaushik Devarajaiah
+Name for group: dev_kau
 
+--- Instructions ---
+1) Run make
+2) Name of binaries generated are client_dev_kau, server_dev_kau, odr_dev_kau
+
+---- Notes ----
 Each client opens a temporary Unix Datagram socket, which is akin to a port in TCP.
 The client then asks the user for an input VM (value can be vm1 to vm10) which will cause a GetTime request to be sent to the server running on that VM. 
 The client request timeout period is 2 seconds.
