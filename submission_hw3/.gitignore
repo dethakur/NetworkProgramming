@@ -1,8 +1,0 @@
-client_dev_kau
-server_dev_kau
-odr_dev_kau
-*.o
-client
-server
-odr
-common
