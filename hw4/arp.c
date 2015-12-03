@@ -57,7 +57,7 @@ void display_cache() {
 		display_mac_addr(arp_cache[i].mac);
 		printf("\n Ifindex: %d\n", arp_cache[i].index);
 		printf(" Waiting Fd: %d\n", arp_cache[i].fd);
-		
+
 		printf("\n");
 	}
 	//println();
@@ -120,7 +120,7 @@ void print_arp(arp_req_reply *arp_ptr) {
 	printf("\neth_src        : ");
 	display_mac_addr(arp_ptr->eth_src);
 	printf("\nframe_type     : %d\n", arp_ptr->frame_type);
-	
+
 	printf("hard_type      : %d\n", arp_ptr->hard_type);
 	printf("prot_type      : %d\n", arp_ptr->prot_type);
 	printf("hard_size      : %d\n", arp_ptr->hard_size);
@@ -168,7 +168,41 @@ void send_req(int sockfd, char *target_ip, int waiting_fd) {
 	send_packet(b_mac, src_mac, src_ifindex, sockfd, &arp_req);
 }
 
-void process_frame(char* output, arp_req_reply* arp_req_reply_ptr) {
+void swap(char *a, char *b, int len) {
+	char temp[100] = "";
+	memcpy(temp, a, len);
+	memcpy(a, b, len);
+	memcpy(b, temp, len);
+}
+
+void handle_request(int rawfd, arp_req_reply* arp_ptr) {
+	print_arp(arp_ptr);		
+	if(strcmp(src_ip, arp_ptr->target_ip) == 0) {
+		arp_ptr->op = 2;
+
+		server_details sv;
+		bzero(&sv, sizeof(server_details));
+		strcpy(sv.ip, arp_ptr->sender_ip);
+		memcpy(sv.mac, arp_ptr->sender_eth, IF_HADDR);
+		insert_into_cache(&sv, NO_FD);
+		display_cache();
+
+		swap(arp_ptr->eth_src, arp_ptr->eth_dest, IF_HADDR);
+		swap(arp_ptr->sender_eth, arp_ptr->target_eth, IF_HADDR);
+		swap(arp_ptr->sender_ip, arp_ptr->target_ip, IP_LEN);
+
+		memcpy(arp_ptr->eth_src, src_mac, IF_HADDR);
+		memcpy(arp_ptr->sender_eth, src_mac, IF_HADDR);
+
+		printf("Sending response\n");
+		print_arp(arp_ptr);	
+		send_packet(arp_ptr->target_eth, src_mac, src_ifindex, rawfd, arp_ptr);
+	} else {
+		printf("Not responding\n");
+	}
+}
+
+void process_frame(int rawfd, char* output, arp_req_reply* arp_req_reply_ptr) {
 	char dest_mac[6];
 	char src_mac[6];
 	char header[100];
@@ -186,14 +220,15 @@ void process_frame(char* output, arp_req_reply* arp_req_reply_ptr) {
 		return;
 	}
 	switch (arp_req_reply_ptr->op) {
-	case 1:
-		print_arp(arp_req_reply_ptr);		
-		break;
-	case 2:
-		print_arp(arp_req_reply_ptr);		
-		break;
-	default:
-		printf("Request not well formed");
+		case 1:
+			handle_request(rawfd, arp_req_reply_ptr);
+			break;
+		case 2:
+			handle_response(arp_req_reply_ptr);
+			print_arp(arp_req_reply_ptr);		
+			break;
+		default:
+			printf("Request not well formed");
 	}
 }
 
@@ -226,7 +261,7 @@ int main() {
 			printf("Received packet on raw socket\n");
 			Recvfrom(rawfd, recvline, ETH_FRAME_LEN, 0, NULL, NULL);
 			arp_req_reply recvd_arp;
-			process_frame(recvline, &recvd_arp);
+			process_frame(rawfd, recvline, &recvd_arp);
 		}
 	}
 
