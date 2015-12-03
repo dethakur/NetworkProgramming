@@ -6,7 +6,7 @@
 #include <linux/if_arp.h>
 
 
-#define NO_FD -1
+#define NO_FD 0  // although 0 is for stdin it is ok since it is not a socket fd
 #define OUR_PF_PROTOCOL "_dkd_1732"
 
 //#define ETH_FRAME_LEN 1518
