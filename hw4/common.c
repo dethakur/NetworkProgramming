@@ -68,14 +68,30 @@ int areq(char *ip, struct hwaddr *hwa) {
 
 	Write(fd, ip, strlen(ip) + 1);
 	char recvline[sizeof(struct hwaddr)] = "";
-	Read(fd, recvline, sizeof(struct hwaddr));
 
-	bzero(hwa, sizeof(struct hwaddr));
-	memcpy(hwa, recvline, sizeof(struct hwaddr));
+	fd_set rset;
+	FD_ZERO(&rset);
+	FD_SET(fd, &rset);
+	struct timeval timeout;
+	bzero(&timeout, sizeof(struct timeval));
+	timeout.tv_sec = 1;
 
-	printf("Received hw addr ");
-	display_mac_addr(hwa->sll_addr);
-	printf("\n");
+	Select(fd + 1, &rset, NULL, NULL, &timeout);
 
-	return 0;
+	if (FD_ISSET(fd, &rset)) {
+		Read(fd, recvline, sizeof(struct hwaddr));
+
+		bzero(hwa, sizeof(struct hwaddr));
+		memcpy(hwa, recvline, sizeof(struct hwaddr));
+
+		printf("Received hw addr ");
+		display_mac_addr(hwa->sll_addr);
+		printf("\n");
+		return 0;
+	} else {
+		// time-out
+		printf("Timeout waiting for reply from arp server.\n");
+		return 1;
+	}
+
 }

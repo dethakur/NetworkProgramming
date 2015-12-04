@@ -293,6 +293,11 @@ void boot() {
 	display_cache();
 }
 
+void sigint_handle() {
+        unlink(DOMAIN_SOCK_PORT);
+        exit(1);
+}
+
 int main(int argc, char **argv) {
 	boot();
 
@@ -312,6 +317,7 @@ int main(int argc, char **argv) {
 	Listen(listenfd, LISTENQ);
 
 	signal(SIGPIPE, SIG_IGN);
+    atexit(sigint_handle);
 
 	int rawfd = Socket(PF_PACKET, SOCK_RAW, htons(OUR_PF_PROTOCOL));
 
@@ -335,7 +341,6 @@ int main(int argc, char **argv) {
 			char buf[100] = "";
 			Read(connfd, buf, 100);
 			printf("Received request to get hw addr for ip:%s\n", buf);
-			sleep(1);
 			if (send_reply(buf, connfd) == 1) {
 				printf("Served request from cache\n");
 			} else {
@@ -346,6 +351,7 @@ int main(int argc, char **argv) {
 	}
 
 	free(recvline);
+	unlink(DOMAIN_SOCK_PORT);
 	return 0;
 }
 
