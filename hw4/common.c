@@ -1,5 +1,6 @@
 #include "common.h"
 
+char client_port[20] = "/tmp/tmpcliport_24123";
 
 void display_mac_addr(char* mac_addr) {
 	int i = 0;
@@ -10,8 +11,6 @@ void display_mac_addr(char* mac_addr) {
 	} while (--i > 0);
 
 }
-
-
 
 int populate_server_details(struct server_details* serv) {
 	struct hwa_info *hwa, *hwahead;
@@ -55,3 +54,28 @@ int populate_server_details(struct server_details* serv) {
 	return count;
 }
 
+int areq(char *ip, struct hwaddr *hwa) {
+	bzero(hwa, sizeof(struct hwaddr));
+
+	struct sockaddr_un cliaddr, servaddr;
+	int fd = Socket(AF_LOCAL, SOCK_STREAM, 0);
+
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sun_family = AF_LOCAL;
+	strcpy(servaddr.sun_path, DOMAIN_SOCK_PORT);
+
+	Connect(fd, (SA *) &servaddr, sizeof(servaddr));
+
+	Write(fd, ip, strlen(ip) + 1);
+	char recvline[sizeof(struct hwaddr)] = "";
+	Read(fd, recvline, sizeof(struct hwaddr));
+
+	bzero(hwa, sizeof(struct hwaddr));
+	memcpy(hwa, recvline, sizeof(struct hwaddr));
+
+	printf("Received hw addr ");
+	display_mac_addr(hwa->sll_addr);
+	printf("\n");
+
+	return 0;
+}

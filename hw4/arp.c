@@ -2,7 +2,7 @@
 #define NUM_CACHE_ENTRIES 40
 
 char src_mac[IF_HADDR];
-char src_ip[20]; 
+char src_ip[20];
 int src_ifindex = -1;
 char identification[3] = "dk";
 arp_cache_details arp_cache[NUM_CACHE_ENTRIES];
@@ -112,7 +112,7 @@ void print_arp(arp_req_reply *arp_ptr) {
 	if (arp_ptr->op == 1) {
 		printf("\t Ethernet frame header and ARP request\t\n");
 	} else {
-		printf("\t Ethernet frame header and ARP reply header\t\n");
+		printf("\t Ethernet frame header and ARP reply\t\n");
 	}
 	println();
 	printf("eth_dest       : ");
@@ -175,9 +175,33 @@ void swap(char *a, char *b, int len) {
 	memcpy(b, temp, len);
 }
 
+void handle_response(arp_req_reply *arp_ptr) {
+	printf("ooojajajaaja....\n");
+	int i = 0;
+	for (i = 0; i < NUM_CACHE_ENTRIES && arp_cache[i].filled == 1; i++) {
+		if (strcmp(arp_cache[i].ip, arp_ptr->sender_ip) == 0) {
+			// update
+			memcpy(arp_cache[i].mac, arp_ptr->sender_eth, IF_HADDR);
+			// reply
+			struct hwaddr hwa;
+			bzero(&hwa, sizeof(struct hwaddr));
+			memcpy(hwa.sll_addr, arp_cache[i].mac, IF_HADDR);
+			hwa.sll_ifindex = arp_cache[i].index;
+			hwa.sll_hatype = 1;
+			hwa.sll_halen = strlen(arp_cache[i].mac);
+
+			char sendline[sizeof(struct hwaddr)] = "";
+			memcpy(sendline, &hwa, sizeof(struct hwaddr));
+
+			Write(arp_cache[i].fd, sendline, sizeof(struct hwaddr));
+			arp_cache[i].fd = NO_FD;
+			return;
+		}
+	}
+}
+
 void handle_request(int rawfd, arp_req_reply* arp_ptr) {
-	print_arp(arp_ptr);		
-	if(strcmp(src_ip, arp_ptr->target_ip) == 0) {
+	if (strcmp(src_ip, arp_ptr->target_ip) == 0) {
 		arp_ptr->op = 2;
 
 		server_details sv;
@@ -195,7 +219,7 @@ void handle_request(int rawfd, arp_req_reply* arp_ptr) {
 		memcpy(arp_ptr->sender_eth, src_mac, IF_HADDR);
 
 		printf("Sending response\n");
-		print_arp(arp_ptr);	
+		print_arp(arp_ptr);
 		send_packet(arp_ptr->target_eth, src_mac, src_ifindex, rawfd, arp_ptr);
 	} else {
 		printf("Not responding\n");
@@ -219,35 +243,56 @@ void process_frame(int rawfd, char* output, arp_req_reply* arp_req_reply_ptr) {
 		printf("Seems like someone else's packet is received\n");
 		return;
 	}
+
+	print_arp(arp_req_reply_ptr);
+
 	switch (arp_req_reply_ptr->op) {
-		case 1:
-			handle_request(rawfd, arp_req_reply_ptr);
-			break;
-		case 2:
-			handle_response(arp_req_reply_ptr);
-			print_arp(arp_req_reply_ptr);		
-			break;
-		default:
-			printf("Request not well formed");
+	case 1:
+		handle_request(rawfd, arp_req_reply_ptr);
+		break;
+	case 2:
+		handle_response(arp_req_reply_ptr);
+		break;
+	default:
+		printf("Request not well formed");
 	}
 }
 
-int main() {
+void boot() {
 	server_details sv[20];
 	bzero(sv, sizeof(server_details) * 20);
 	populate_server_details(sv);
 
 	boot_cache(sv, arp_cache, 20);
 	display_cache();
+}
+
+int main() {
+	boot();
+
+	int listenfd, connfd;
+	pid_t childpid;
+	socklen_t clilen;
+	struct sockaddr_un cliaddr, servaddr;
+
+	listenfd = Socket(AF_LOCAL, SOCK_STREAM, 0);
+
+	unlink(DOMAIN_SOCK_PORT);
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sun_family = AF_LOCAL;
+	strcpy(servaddr.sun_path, DOMAIN_SOCK_PORT);
+
+	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+	Listen(listenfd, LISTENQ);
 
 	int rawfd = Socket(PF_PACKET, SOCK_RAW, htons(OUR_PF_PROTOCOL));
 
-	// temporary for testing
-	if (strcmp(src_ip, "130.245.156.23") == 0) {
-		send_req(rawfd, "130.245.156.21", 101);
-		display_cache();
-		printf("sent req..\n");
-	}
+	//	// temporary for testing
+	//	if (strcmp(src_ip, "130.245.156.23") == 0) {
+	//		send_req(rawfd, "130.245.156.21", 101);
+	//		display_cache();
+	//		printf("sent req..\n");
+	//	}
 
 	void* recvline = malloc(ETH_FRAME_LEN);
 	bzero(recvline, ETH_FRAME_LEN);
@@ -256,12 +301,21 @@ int main() {
 	while (1) {
 		FD_ZERO(&rset);
 		FD_SET(rawfd, &rset);
-		Select(rawfd + 1, &rset, NULL, NULL, NULL);
+		FD_SET(listenfd, &rset);
+		Select(max(rawfd, listenfd) + 1, &rset, NULL, NULL, NULL);
 		if (FD_ISSET(rawfd, &rset)) {
 			printf("Received packet on raw socket\n");
 			Recvfrom(rawfd, recvline, ETH_FRAME_LEN, 0, NULL, NULL);
 			arp_req_reply recvd_arp;
 			process_frame(rawfd, recvline, &recvd_arp);
+		}
+		if (FD_ISSET(listenfd, &rset)) {
+			connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+			char buf[100] = "";
+			Read(connfd, buf, 100);
+			printf("Received request to get hw addr for ip:%s\n", buf);
+			send_req(rawfd, buf, connfd);
+			display_cache();
 		}
 	}
 
