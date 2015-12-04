@@ -46,7 +46,7 @@ void boot_cache(server_details svd[], arp_cache_details acache[], int n) {
 
 void display_cache() {
 	//println();
-	printf("Cache contents\n");
+	printf("\nCache contents\n");
 	int i;
 	for (i = 0; i < NUM_CACHE_ENTRIES && arp_cache[i].filled == 1; i++) {
 		//printf("\n**** found sv %s\n", sv[i].ip);
@@ -192,7 +192,11 @@ int send_reply(char *ip, int fd) {
 			memcpy(sendline, &hwa, sizeof(struct hwaddr));
 
 			int fd_to_use = (fd != -1) ? fd : arp_cache[i].fd;
-			Write(fd_to_use, sendline, sizeof(struct hwaddr));
+			write(fd_to_use, sendline, sizeof(struct hwaddr));
+			if (arp_cache[i].fd > 0) {
+				printf("Closing fd: %d\n", arp_cache[i].fd);
+				close(arp_cache[i].fd);
+			}
 			arp_cache[i].fd = NO_FD;
 			display_cache();
 			return 1;
@@ -307,6 +311,8 @@ int main(int argc, char **argv) {
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 	Listen(listenfd, LISTENQ);
 
+	signal(SIGPIPE, SIG_IGN);
+
 	int rawfd = Socket(PF_PACKET, SOCK_RAW, htons(OUR_PF_PROTOCOL));
 
 	void* recvline = malloc(ETH_FRAME_LEN);
@@ -329,6 +335,7 @@ int main(int argc, char **argv) {
 			char buf[100] = "";
 			Read(connfd, buf, 100);
 			printf("Received request to get hw addr for ip:%s\n", buf);
+			sleep(1);
 			if (send_reply(buf, connfd) == 1) {
 				printf("Served request from cache\n");
 			} else {
