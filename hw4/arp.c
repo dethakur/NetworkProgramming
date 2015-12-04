@@ -46,17 +46,17 @@ void boot_cache(server_details svd[], arp_cache_details acache[], int n) {
 
 void display_cache() {
 	//println();
-	printf("\tCache contents\t\n");
+	printf("Cache contents\n");
 	int i;
 	for (i = 0; i < NUM_CACHE_ENTRIES && arp_cache[i].filled == 1; i++) {
 		//printf("\n**** found sv %s\n", sv[i].ip);
 		//display_mac_addr(sv[i].mac);
 		printf("(%d)\n", i + 1);
-		printf(" IP: %s\n", arp_cache[i].ip);
-		printf(" HW: ");
+		printf("IP         : %s\n", arp_cache[i].ip);
+		printf("HW         : ");
 		display_mac_addr(arp_cache[i].mac);
-		printf("\n Ifindex: %d\n", arp_cache[i].index);
-		printf(" Waiting Fd: %d\n", arp_cache[i].fd);
+		printf("\nIfindex    : %d\n", arp_cache[i].index);
+		printf("Waiting Fd : %d\n", arp_cache[i].fd);
 
 		printf("\n");
 	}
@@ -109,6 +109,7 @@ void println() {
 }
 
 void print_arp(arp_req_reply *arp_ptr) {
+	println();
 	if (arp_ptr->op == 1) {
 		printf("\t Ethernet frame header and ARP request\t\n");
 	} else {
@@ -175,13 +176,10 @@ void swap(char *a, char *b, int len) {
 	memcpy(b, temp, len);
 }
 
-void handle_response(arp_req_reply *arp_ptr) {
-	printf("ooojajajaaja....\n");
+int send_reply(char *ip, int fd) {
 	int i = 0;
 	for (i = 0; i < NUM_CACHE_ENTRIES && arp_cache[i].filled == 1; i++) {
-		if (strcmp(arp_cache[i].ip, arp_ptr->sender_ip) == 0) {
-			// update
-			memcpy(arp_cache[i].mac, arp_ptr->sender_eth, IF_HADDR);
+		if (strcmp(arp_cache[i].ip, ip) == 0) {
 			// reply
 			struct hwaddr hwa;
 			bzero(&hwa, sizeof(struct hwaddr));
@@ -193,11 +191,32 @@ void handle_response(arp_req_reply *arp_ptr) {
 			char sendline[sizeof(struct hwaddr)] = "";
 			memcpy(sendline, &hwa, sizeof(struct hwaddr));
 
-			Write(arp_cache[i].fd, sendline, sizeof(struct hwaddr));
+			int fd_to_use = (fd != -1) ? fd : arp_cache[i].fd;
+			Write(fd_to_use, sendline, sizeof(struct hwaddr));
 			arp_cache[i].fd = NO_FD;
-			return;
+			display_cache();
+			return 1;
 		}
 	}
+	return 0;
+}
+
+int update_response_in_cache(arp_req_reply *arp_ptr) {
+	int i = 0;
+	for (i = 0; i < NUM_CACHE_ENTRIES; i++) {
+		if (strcmp(arp_cache[i].ip, arp_ptr->sender_ip) == 0) {
+			printf("Updating response in cache.\n");
+			memcpy(arp_cache[i].mac, arp_ptr->sender_eth, IF_HADDR);
+			arp_cache[i].filled = 1;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void handle_response(arp_req_reply *arp_ptr) {
+	update_response_in_cache(arp_ptr);
+	send_reply(arp_ptr->sender_ip, -1);
 }
 
 void handle_request(int rawfd, arp_req_reply* arp_ptr) {
@@ -222,7 +241,10 @@ void handle_request(int rawfd, arp_req_reply* arp_ptr) {
 		print_arp(arp_ptr);
 		send_packet(arp_ptr->target_eth, src_mac, src_ifindex, rawfd, arp_ptr);
 	} else {
-		printf("Not responding\n");
+		if (!update_response_in_cache(arp_ptr)) {
+			printf(
+					"Not a request for this host. Sender not in cache. Not performing cache update.\n");
+		}
 	}
 }
 
@@ -267,7 +289,7 @@ void boot() {
 	display_cache();
 }
 
-int main() {
+int main(int argc, char **argv) {
 	boot();
 
 	int listenfd, connfd;
@@ -286,13 +308,6 @@ int main() {
 	Listen(listenfd, LISTENQ);
 
 	int rawfd = Socket(PF_PACKET, SOCK_RAW, htons(OUR_PF_PROTOCOL));
-
-	//	// temporary for testing
-	//	if (strcmp(src_ip, "130.245.156.23") == 0) {
-	//		send_req(rawfd, "130.245.156.21", 101);
-	//		display_cache();
-	//		printf("sent req..\n");
-	//	}
 
 	void* recvline = malloc(ETH_FRAME_LEN);
 	bzero(recvline, ETH_FRAME_LEN);
@@ -314,8 +329,12 @@ int main() {
 			char buf[100] = "";
 			Read(connfd, buf, 100);
 			printf("Received request to get hw addr for ip:%s\n", buf);
-			send_req(rawfd, buf, connfd);
-			display_cache();
+			if (send_reply(buf, connfd) == 1) {
+				printf("Served request from cache\n");
+			} else {
+				send_req(rawfd, buf, connfd);
+				display_cache();
+			}
 		}
 	}
 
