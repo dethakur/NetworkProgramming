@@ -1,3 +1,9 @@
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <netdb.h>
+
 #include "unp.h"
 #include "hw_addrs.h"
 #define IP_LEN 20
@@ -18,3 +24,4 @@ struct hwaddr {
 }__attribute((packed));
 
 int areq(char *ip, struct hwaddr *hwaddr);
+void get_ip_from_host(char* host,char* str);
