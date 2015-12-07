@@ -124,9 +124,6 @@ void alarm_handler() {
 
 	char src_ip[20] = "130.245.156.29";
 	char dest_ip[20] = "130.245.156.20";
-
-	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
-	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
 	int val = 1;
 	int on = 1;
 
@@ -144,6 +141,9 @@ int main(int argc, char** argv) {
 	signal(SIGALRM, alarm_handler);
 	char host[20];
 	gethostname(host, 20);
+	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
+
 	if (strcmp(host, "vm9") == 0) {
 		fd_set rset;
 		while(1) {
