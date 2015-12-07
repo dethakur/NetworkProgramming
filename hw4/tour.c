@@ -102,6 +102,7 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_i
 }
 
 int main(int argc, char** argv) {
+	printf("Trying to ping from vm9 to vm10\n");
 	char src_mac[6];
 	src_mac[0] = 0x00;
 	src_mac[1] = 0x0c;
