@@ -31,7 +31,7 @@ void set_icmp(struct icmp *icmp_ptr) {
 	icmp_ptr->icmp_cksum = in_cksum((u_short *) icmp_ptr, len);
 }
 
-void send_packet(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
+void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
 		int if_index, int rawfd) {
 	printf("src_ip %s, src_mac ", src_ip);
 	display_mac_addr(src_mac);
@@ -56,7 +56,7 @@ void send_packet(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
 	struct sockaddr_ll socket_address;
 	//	void* buffer = (void*) malloc(ETH_FRAME_LEN);
 	void* buffer = (void*) malloc(IP_MAXPACKET);
-	printf("buffer len %d\n", IP_MAXPACKET);
+//	printf("buffer len %d\n", IP_MAXPACKET);
 
 	unsigned char* etherhead = buffer;
 	struct ethhdr *eh = (struct ethhdr *) etherhead;
@@ -81,7 +81,7 @@ void send_packet(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
 	socket_address.sll_addr[6] = 0x00;/*not used*/
 	socket_address.sll_addr[7] = 0x00;/*not used*/
 
-	printf("ETH_ALEN %d\n", ETH_ALEN);
+//	printf("ETH_ALEN %d\n", ETH_ALEN);
 	memcpy((void*) buffer, (void*) dst_mac, ETH_ALEN);
 	memcpy((void*) (buffer + ETH_ALEN), (void*) src_mac, ETH_ALEN);
 	eh->h_proto = htons(ETH_P_IP);
@@ -96,7 +96,7 @@ void send_packet(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
 	//	  memcpy (data + ETH_HDRLEN + IP4_HDRLEN + ICMP_HDRLEN, data, datalen);
 
 	int frame_length = 6 + 6 + 2 + IP4_HDRLEN + ICMP_HDRLEN + 0;
-	printf("final framelen %d\n", frame_length);
+//	printf("final framelen %d\n", frame_length);
 	Sendto(rawfd, buffer, frame_length, 0, (struct sockaddr*) &socket_address,
 			sizeof(socket_address));
 }
@@ -127,12 +127,13 @@ int main(int argc, char** argv) {
 	char host[20];
 	gethostname(host, 20);
 	if (strcmp(host, "vm9") == 0) {
-		printf("sending request\n");
-		send_packet(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
+		printf("Sending ping request\n");
+		send_ping_request(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
 
 		fd_set rset;
 		FD_ZERO(&rset);
 		FD_SET(pgfd, &rset);
+		printf("Now waiting to hear a ping response\n");
 		Select(max(pgfd, rawfd) + 1, &rset, NULL, NULL, NULL);
 
 		if (FD_ISSET(pgfd, &rset)) {
