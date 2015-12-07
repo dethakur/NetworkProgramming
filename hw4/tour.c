@@ -101,7 +101,10 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_i
 			sizeof(socket_address));
 }
 
-int main(int argc, char** argv) {
+
+int rawfd;
+int pgfd ;
+void alarm_handler() {
 	printf("Trying to ping from vm9 to vm10\n");
 	char src_mac[6];
 	src_mac[0] = 0x00;
@@ -122,25 +125,40 @@ int main(int argc, char** argv) {
 	char src_ip[20] = "130.245.156.29";
 	char dest_ip[20] = "130.245.156.20";
 
-	int rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
-	int pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
+	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
+	int val = 1;
+	int on = 1;
+
+	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val, sizeof(val));
 
 	char host[20];
 	gethostname(host, 20);
 	if (strcmp(host, "vm9") == 0) {
 		printf("Sending ping request\n");
 		send_ping_request(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
+	}
+}
 
+int main(int argc, char** argv) {
+	signal(SIGALRM, alarm_handler);
+	char host[20];
+	gethostname(host, 20);
+	if (strcmp(host, "vm9") == 0) {
 		fd_set rset;
-		FD_ZERO(&rset);
-		FD_SET(pgfd, &rset);
-		printf("Now waiting to hear a ping response\n");
-		Select(max(pgfd, rawfd) + 1, &rset, NULL, NULL, NULL);
+		while(1) {
+			alarm(1);
+			FD_ZERO(&rset);
+			FD_SET(pgfd, &rset);
+			printf("Waiting to hear a ping response\n");
+			select(max(pgfd, rawfd) + 1, &rset, NULL, NULL, NULL);
 
-		if (FD_ISSET(pgfd, &rset)) {
-			printf("received something on ping socket\n");
+			if (FD_ISSET(pgfd, &rset)) {
+				printf("received something on ping socket\n");
+			}
 		}
 	}
+
 }
 
 int main2(int argc, char** argv) {
