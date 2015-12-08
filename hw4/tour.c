@@ -1,4 +1,5 @@
 #include "common.h"
+#include <pthread.h>
 #include "tour.h"
 #include <sys/socket.h>
 #include <linux/if_packet.h>
@@ -15,47 +16,52 @@ char src_ip[INET_ADDRSTRLEN];
 route route_el;
 
 static int visited = 0;
+int seq = 0;
 
 void set_icmp(struct icmp *icmp_ptr) {
 	//	struct icmp_ptr *icmp_ptr;
 	icmp_ptr->icmp_type = ICMP_ECHO;
 	icmp_ptr->icmp_code = 0;
 	icmp_ptr->icmp_id = getpid();
-	icmp_ptr->icmp_seq = 0;
+	icmp_ptr->icmp_seq = seq + 1;
+//	int datalen = 0;
 	int datalen = sizeof(struct timeval);
 	memset(icmp_ptr->icmp_data, 0xa5, datalen); /* fill with pattern */
 	Gettimeofday((struct timeval *) icmp_ptr->icmp_data, NULL);
-	//	len = 8 + datalen; /* checksum ICMP header and data */
+//		len = 8 + datalen; /* checksum ICMP header and data */
 	int len = sizeof(struct icmp) + datalen;
 	icmp_ptr->icmp_cksum = 0;
 	icmp_ptr->icmp_cksum = in_cksum((u_short *) icmp_ptr, len);
+	seq++;
 }
 
-void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_ip,
-		int if_index, int rawfd) {
-	printf("src_ip %s, src_mac ", src_ip);
-	display_mac_addr(src_mac);
-	printf("\ndst_ip %s, dst_mac ", dest_ip);
-	display_mac_addr(dst_mac);
-	printf("\n hello..\n ");
-
-	struct icmp *icmp;
+void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
+		char *dest_ip, int if_index, int rawfd) {
+//	printf("src_ip %s, src_mac ", src_ip);
+//	display_mac_addr(src_mac);
+//	printf("\ndst_ip %s, dst_mac ", dest_ip);
+//	display_mac_addr(dst_mac);
+//	printf("\n hello..\n ");
+	printf("[Ping] Sending!!!");
+	struct icmp icmp;
+	bzero(&icmp,sizeof(icmp));
 	set_icmp(&icmp);
 
 	struct ip header;
 	bzero(&header, sizeof(struct ip));
 	header.ip_hl = 5;
+	header.ip_len = htons(sizeof(icmp) + ICMP_HDRLEN);
 	header.ip_v = IPVERSION;
 	header.ip_tos = 0;
-	header.ip_id = htons(IDENTIFICATION);
+	header.ip_id = htons(0);
 	header.ip_ttl = MAXTTL;
-	header.ip_p = htons(IPPROTO_ICMP);
+	header.ip_p = IPPROTO_ICMP;
 	header.ip_src.s_addr = inet_addr(src_ip);
 	header.ip_dst.s_addr = inet_addr(dest_ip);
 
 	struct sockaddr_ll socket_address;
 	//	void* buffer = (void*) malloc(ETH_FRAME_LEN);
-	void* buffer = (void*) malloc(IP_MAXPACKET);
+	void* buffer = (void*) malloc(ETH_FRAME_LEN);
 //	printf("buffer len %d\n", IP_MAXPACKET);
 
 	unsigned char* etherhead = buffer;
@@ -64,7 +70,6 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_i
 
 	socket_address.sll_family = PF_PACKET;
 	socket_address.sll_protocol = htons(0);
-	socket_address.sll_family = PF_PACKET;
 	socket_address.sll_ifindex = if_index;
 	socket_address.sll_hatype = ARPHRD_ETHER;
 	socket_address.sll_pkttype = PACKET_OTHERHOST;
@@ -87,24 +92,24 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip, char *dest_i
 	eh->h_proto = htons(ETH_P_IP);
 
 	// IPv4 header
-	memcpy(data, &header, IP4_HDRLEN);
+	memcpy(data, &header, sizeof(header));
 
 	// ICMP header
-	memcpy(data + IP4_HDRLEN, &icmp, ICMP_HDRLEN);
+	memcpy(data + sizeof(header), &icmp, sizeof(icmp));
 
 	//	  // ICMP data
 	//	  memcpy (data + ETH_HDRLEN + IP4_HDRLEN + ICMP_HDRLEN, data, datalen);
 
-	int frame_length = 6 + 6 + 2 + IP4_HDRLEN + ICMP_HDRLEN + 0;
+//	int frame_length = 6 + 6 + 2 + IP4_HDRLEN + ICMP_HDRLEN + 0;
 //	printf("final framelen %d\n", frame_length);
-	Sendto(rawfd, buffer, frame_length, 0, (struct sockaddr*) &socket_address,
+	Sendto(rawfd, buffer, ETH_FRAME_LEN, 0, (struct sockaddr*) &socket_address,
 			sizeof(socket_address));
 }
 
-
 int rawfd;
-int pgfd ;
+int pgfd;
 void alarm_handler() {
+	sleep(1);
 	printf("Trying to ping from vm9 to vm10\n");
 	char src_mac[6];
 	src_mac[0] = 0x00;
@@ -124,37 +129,55 @@ void alarm_handler() {
 
 	char src_ip[20] = "130.245.156.29";
 	char dest_ip[20] = "130.245.156.20";
-	int val = 1;
-	int on = 1;
-
-	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val, sizeof(val));
 
 	char host[20];
 	gethostname(host, 20);
 	if (strcmp(host, "vm9") == 0) {
-		printf("Sending ping request\n");
-		send_ping_request(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
+
+		while (1) {
+			printf("Sending ping request\n");
+			send_ping_request(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
+			sleep(1);
+		}
 	}
 }
 
 int main(int argc, char** argv) {
-	signal(SIGALRM, alarm_handler);
-	char host[20];
-	gethostname(host, 20);
+	int val1 = 1;
+	int val2 = 1;
+	int val3 = 1;
 	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
 	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
 
+//	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val1, sizeof(val1));
+
+//	setsockopt(rawfd, IPPROTO_IP, IP_HDRINCL, &val2, sizeof(val2));
+//	setsockopt(rawfd, SOL_SOCKET, SO_REUSEADDR, &val3, sizeof(val3));
+
+	pthread_t tid;
+	pthread_create(&tid, NULL, &alarm_handler, NULL);
+	pthread_detach(tid);
+
+	char host[20];
+	gethostname(host, 20);
+
 	if (strcmp(host, "vm9") == 0) {
 		fd_set rset;
-		while(1) {
-			alarm(1);
+		while (1) {
+
+//			alarm(1);
 			FD_ZERO(&rset);
 			FD_SET(pgfd, &rset);
+			int max_val = max(pgfd, rawfd);
 			printf("Waiting to hear a ping response\n");
-			select(max(pgfd, rawfd) + 1, &rset, NULL, NULL, NULL);
+			Select(max_val + 1, &rset, NULL, NULL, NULL);
+
+			if (FD_ISSET(rawfd, &rset)) {
+				printf("[PING] RAW FD received something on ping socket\n");
+			}
 
 			if (FD_ISSET(pgfd, &rset)) {
-				printf("received something on ping socket\n");
+				printf("[PING] received something on ping socket\n");
 			}
 		}
 	}
@@ -248,8 +271,7 @@ void populate_route(int argc, char** argv) {
 
 void send_multicast(SA* sadest, socklen_t salen) {
 	char output[MAXLINE];
-	sprintf(
-			output,
+	sprintf(output,
 			"<<<< This is %s. Tour has ended. Group members please identify yourselves >>>>",
 			src_vm);
 	printf("Node %s. Sending : %s\n", src_vm, output);

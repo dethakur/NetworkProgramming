@@ -4,7 +4,7 @@ CC = gcc
 LIBS =  -lnsl\
 	/home/courses/cse533/Stevens/unpv13e/libunp.a
 
-FLAGS = -g -O2
+FLAGS = -g -O2 -pthread
 CFLAGS = ${FLAGS} -I/home/courses/cse533/Stevens/unpv13e/lib
 
 all: tour arp clean
