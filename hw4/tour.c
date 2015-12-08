@@ -22,14 +22,14 @@ void set_icmp(struct icmp *icmp_ptr) {
 	//	struct icmp_ptr *icmp_ptr;
 	icmp_ptr->icmp_type = ICMP_ECHO;
 	icmp_ptr->icmp_code = 0;
-	icmp_ptr->icmp_id = getpid();
-	icmp_ptr->icmp_seq = seq + 1;
+	icmp_ptr->icmp_id = htons(getpid());
+	icmp_ptr->icmp_seq = htons(seq + 1);
 //	int datalen = 0;
 	int datalen = sizeof(struct timeval);
 	memset(icmp_ptr->icmp_data, 0xa5, datalen); /* fill with pattern */
 	Gettimeofday((struct timeval *) icmp_ptr->icmp_data, NULL);
-//		len = 8 + datalen; /* checksum ICMP header and data */
-	int len = sizeof(struct icmp) + datalen;
+	int	len = 8 + datalen; /* checksum ICMP header and data */
+//	int len = sizeof(struct icmp) + datalen;
 	icmp_ptr->icmp_cksum = 0;
 	icmp_ptr->icmp_cksum = in_cksum((u_short *) icmp_ptr, len);
 	seq++;
@@ -58,6 +58,8 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 	header.ip_p = IPPROTO_ICMP;
 	header.ip_src.s_addr = inet_addr(src_ip);
 	header.ip_dst.s_addr = inet_addr(dest_ip);
+//	header.ip_sum = 0;
+//	header.ip_sum = in_cksum((u_short *) &header, IP4_HDRLEN+sizeof(icmp));
 
 	struct sockaddr_ll socket_address;
 	//	void* buffer = (void*) malloc(ETH_FRAME_LEN);
@@ -149,10 +151,10 @@ int main(int argc, char** argv) {
 	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
 	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
 
-//	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val1, sizeof(val1));
+	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val1, sizeof(val1));
 
-//	setsockopt(rawfd, IPPROTO_IP, IP_HDRINCL, &val2, sizeof(val2));
-//	setsockopt(rawfd, SOL_SOCKET, SO_REUSEADDR, &val3, sizeof(val3));
+	setsockopt(rawfd, IPPROTO_IP, IP_HDRINCL, &val2, sizeof(val2));
+	setsockopt(rawfd, SOL_SOCKET, SO_REUSEADDR, &val3, sizeof(val3));
 
 	pthread_t tid;
 	pthread_create(&tid, NULL, &alarm_handler, NULL);
