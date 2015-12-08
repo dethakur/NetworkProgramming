@@ -58,8 +58,8 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 	header.ip_p = IPPROTO_ICMP;
 	header.ip_src.s_addr = inet_addr(src_ip);
 	header.ip_dst.s_addr = inet_addr(dest_ip);
-//	header.ip_sum = 0;
-//	header.ip_sum = in_cksum((u_short *) &header, IP4_HDRLEN+sizeof(icmp));
+	header.ip_sum = 0;
+	header.ip_sum = in_cksum((u_short *) &header, IP4_HDRLEN);
 
 	struct sockaddr_ll socket_address;
 	//	void* buffer = (void*) malloc(ETH_FRAME_LEN);
