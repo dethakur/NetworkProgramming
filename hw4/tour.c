@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
 	int val2 = 1;
 	int val3 = 1;
 	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
-	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
+	pgfd = Socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
 	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val1, sizeof(val1));
 
