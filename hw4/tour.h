@@ -19,3 +19,4 @@ void send_rt();
 int recv_rt(char*);
 void send_multicast(SA*,socklen_t);
 void populate_route(int , char**);
+void send_ping();

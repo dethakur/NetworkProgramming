@@ -9,7 +9,7 @@ then
 fi
 
 echo "Deploying Files on VMs: " 
-for ((i=$NUM_VMs; $i >= 1; i=i-1)); 
+for ((i=1; $i <= $NUM_VMs; i=i+1)); 
   do echo "vm$i " 
     scp -p $@ root@vm$i:/home/$USER
     sleep 1
