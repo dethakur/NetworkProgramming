@@ -85,8 +85,8 @@ int areq(char *ip, struct hwaddr *hwa) {
 		memcpy(hwa, recvline, sizeof(struct hwaddr));
 
 //		printf("Received hw addr ");
-		display_mac_addr(hwa->sll_addr);
-		printf("\n");
+//		display_mac_addr(hwa->sll_addr);
+//		printf("\n");
 		return 0;
 	} else {
 		// time-out
