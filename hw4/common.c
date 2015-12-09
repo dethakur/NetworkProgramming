@@ -55,6 +55,7 @@ int populate_server_details(struct server_details* serv) {
 }
 
 int areq(char *ip, struct hwaddr *hwa) {
+	printf("[ARP-REQ] IP:%s\n", ip);
 	bzero(hwa, sizeof(struct hwaddr));
 
 	struct sockaddr_un cliaddr, servaddr;
@@ -83,6 +84,10 @@ int areq(char *ip, struct hwaddr *hwa) {
 
 		bzero(hwa, sizeof(struct hwaddr));
 		memcpy(hwa, recvline, sizeof(struct hwaddr));
+
+		printf("[ARP-RSP] IP:%s, HW_Addr: ", ip);
+		display_mac_addr(hwa->sll_addr);
+		printf("\n");
 
 //		printf("Received hw addr ");
 //		display_mac_addr(hwa->sll_addr);
