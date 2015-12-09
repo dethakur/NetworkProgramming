@@ -331,7 +331,7 @@ int main(int argc, char **argv) {
 		FD_SET(listenfd, &rset);
 		Select(max(rawfd, listenfd) + 1, &rset, NULL, NULL, NULL);
 		if (FD_ISSET(rawfd, &rset)) {
-			printf("Received packet on raw socket\n");
+//			printf("Received packet on raw socket\n");
 			Recvfrom(rawfd, recvline, ETH_FRAME_LEN, 0, NULL, NULL);
 			arp_req_reply recvd_arp;
 			process_frame(rawfd, recvline, &recvd_arp);
@@ -340,9 +340,9 @@ int main(int argc, char **argv) {
 			connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
 			char buf[100] = "";
 			Read(connfd, buf, 100);
-			printf("Received request to get hw addr for ip:%s\n", buf);
+//			printf("Received request to get hw addr for ip:%s\n", buf);
 			if (send_reply(buf, connfd) == 1) {
-				printf("Served request from cache\n");
+//				printf("Served request from cache\n");
 			} else {
 				send_req(rawfd, buf, connfd);
 				display_cache();

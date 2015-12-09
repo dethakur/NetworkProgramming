@@ -25,3 +25,4 @@ struct hwaddr {
 
 int areq(char *ip, struct hwaddr *hwaddr);
 void get_ip_from_host(char* host,char* str);
+void get_host_from_ip(char*,char* );

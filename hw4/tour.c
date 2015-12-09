@@ -19,6 +19,12 @@ int rawfd;
 int pgfd;
 int seq = 0;
 
+
+volatile int keep_pinging = 1;
+pthread_mutex_t mutex;
+char* ips_to_ping[];
+int ip_to_ping_index = 0;
+
 char dest_ping_ip[INET_ADDRSTRLEN];
 
 static int visited = 0;
@@ -27,14 +33,13 @@ void set_icmp(struct icmp *icmp_ptr) {
 	//	struct icmp_ptr *icmp_ptr;
 	icmp_ptr->icmp_type = ICMP_ECHO;
 	icmp_ptr->icmp_code = 0;
-	icmp_ptr->icmp_id = htons(getpid());
+	icmp_ptr->icmp_id = getpid();
 	icmp_ptr->icmp_seq = htons(seq + 1);
-	//	int datalen = 0;
 	int datalen = sizeof(struct timeval);
 	memset(icmp_ptr->icmp_data, 0xa5, datalen); /* fill with pattern */
 	Gettimeofday((struct timeval *) icmp_ptr->icmp_data, NULL);
 	int len = 8 + datalen; /* checksum ICMP header and data */
-	//	int len = sizeof(struct icmp) + datalen;
+
 	icmp_ptr->icmp_cksum = 0;
 	icmp_ptr->icmp_cksum = in_cksum((u_short *) icmp_ptr, len);
 	seq++;
@@ -43,13 +48,7 @@ void set_icmp(struct icmp *icmp_ptr) {
 void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 		char *dest_ip, int if_index, int rawfd) {
 
-	//	printf("src_ip %s, src_mac ", src_ip);
-	//	display_mac_addr(src_mac);
-	//	printf("\ndst_ip %s, dst_mac ", dest_ip);
-	//	display_mac_addr(dst_mac);
-	//	printf("\n hello..\n ");
 
-	//	printf("[Ping] Sending!!!");
 	struct icmp icmp;
 	bzero(&icmp, sizeof(icmp));
 	set_icmp(&icmp);
@@ -114,68 +113,6 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 	Sendto(rawfd, buffer, ETH_FRAME_LEN, 0, (struct sockaddr*) &socket_address,
 			sizeof(socket_address));
 }
-
-//void alarm_handler() {
-//	printf("Trying to ping from vm9 to vm10\n");
-//	char src_mac[6];
-//	src_mac[0] = 0x00;
-//	src_mac[1] = 0x0c;
-//	src_mac[2] = 0x29;
-//	src_mac[3] = 0xbb;
-//	src_mac[4] = 0x12;
-//	src_mac[5] = 0xaa;
-//
-//	char dst_mac[6];
-//	dst_mac[0] = 0x00;
-//	dst_mac[1] = 0x0c;
-//	dst_mac[2] = 0x29;
-//	dst_mac[3] = 0xde;
-//	dst_mac[4] = 0x6a;
-//	dst_mac[5] = 0x62;
-//
-//	char src_ip[20] = "130.245.156.29";
-//	char dest_ip[20] = "130.245.156.20";
-//	int val = 1;
-//	int on = 1;
-//
-//	setsockopt(pgfd, IPPROTO_IP, IP_HDRINCL, &val, sizeof(val));
-//
-//	char host[20];
-//	gethostname(host, 20);
-//	if (strcmp(host, "vm9") == 0) {
-//		printf("Sending ping request\n");
-//		send_ping_request(dst_mac, src_mac, src_ip, dest_ip, 2, rawfd);
-//	}
-//}
-
-//int main(int argc, char** argv) {
-//	signal(SIGALRM, alarm_handler);
-//	char host[20];
-//	gethostname(host, 20);
-//	rawfd = Socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
-//	pgfd = Socket(AF_INET, SOCK_RAW, htons(IPPROTO_ICMP));
-//
-//	if (strcmp(host, "vm9") == 0) {
-//		fd_set rset;
-//		while (1) {
-//			alarm(1);
-//			FD_ZERO(&rset);
-//			FD_SET(pgfd, &rset);
-//			printf("Waiting to hear a ping response\n");
-//			select(max(pgfd, rawfd) + 1, &rset, NULL, NULL, NULL);
-//
-//			if (FD_ISSET(pgfd, &rset)) {
-//				printf("received something on ping socket\n");
-//			}
-//		}
-//	}
-//
-//}
-
-volatile int keep_pinging = 1;
-pthread_mutex_t mutex;
-char* ips_to_ping[];
-int ip_to_ping_index = 0;
 
 void add_ip_to_ping(char *dest_ping_ip) {
 	int k = 0;
@@ -261,7 +198,7 @@ int main(int argc, char** argv) {
 		int max_val = max(rt_sock, udp_recv_sock);
 		max_val = max(max_val, pgfd);
 		max_val = max_val + 1;
-		printf("Waiting for select!\n");
+//		printf("Waiting for select!\n");
 		Select(max_val, &rset, NULL, NULL, NULL);
 
 		if (FD_ISSET(rt_sock, &rset)) {
@@ -275,7 +212,6 @@ int main(int argc, char** argv) {
 
 				strcpy(dest_ping_ip, sock_ntop(&recvaddr, len));
 				add_ip_to_ping(dest_ping_ip);
-				printf("Data received from IP = %s\n", dest_ping_ip);
 				if (route_el.index >= route_el.total_size) {
 //					send_multicast(sasend, salen);
 				} else {
@@ -285,8 +221,31 @@ int main(int argc, char** argv) {
 		}
 
 		if (FD_ISSET(pgfd, &rset)) {
-			printf("[PING]received something on ping socket\n");
+
+//			printf("[PING]received something on ping socket\n");
 			Recvfrom(pgfd, output, MAXLINE, 0, NULL, NULL);
+			char *p = output;
+
+			struct ip ip_hdr;
+			memcpy(&ip_hdr,p,sizeof(ip_hdr));
+
+			p = p + sizeof(ip_hdr);
+
+			struct icmp icmp_pkt; //= p + 20;
+			memcpy(&icmp_pkt,p,sizeof(icmp_pkt));
+
+			if(icmp_pkt.icmp_id == getpid()){
+				char src_ip[INET_ADDRSTRLEN];
+				char host[20];
+				strcpy(src_ip,inet_ntoa(ip_hdr.ip_src));
+				get_host_from_ip(src_ip,host);
+
+				printf("Ping Received by %s - %s \n",src_ip,host);
+
+
+
+			}
+
 		}
 
 		if (FD_ISSET(udp_recv_sock, &rset)) {
@@ -318,7 +277,7 @@ void send_ping() {
 			areq((char*) ips_to_ping[k], &dest_hwaddr);
 			areq(src_ip, &src_hwaddr);
 
-			printf("Sending ping to %s!!\n", ips_to_ping[k]);
+//			printf("Sending ping to %s!!\n", ips_to_ping[k]);
 			send_ping_request(dest_hwaddr.sll_addr, src_hwaddr.sll_addr,
 					src_ip, ips_to_ping[k], src_hwaddr.sll_ifindex, rawfd);
 			//	alarm(1);

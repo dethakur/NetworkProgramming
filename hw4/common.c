@@ -84,7 +84,7 @@ int areq(char *ip, struct hwaddr *hwa) {
 		bzero(hwa, sizeof(struct hwaddr));
 		memcpy(hwa, recvline, sizeof(struct hwaddr));
 
-		printf("Received hw addr ");
+//		printf("Received hw addr ");
 		display_mac_addr(hwa->sll_addr);
 		printf("\n");
 		return 0;
@@ -94,6 +94,40 @@ int areq(char *ip, struct hwaddr *hwa) {
 		return 1;
 	}
 }
+
+void get_host_from_ip(char* ip,char* host){
+	struct in_addr ipv4addr;
+	struct hostent* host_val;
+
+	inet_pton(AF_INET, ip, &ipv4addr);
+	host_val = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
+	if(host_val == NULL){
+		printf("IP is not found \n");
+	}else{
+		strcpy(host,host_val->h_name);
+//		char **pptr = host_val-	>h_addr_list;
+//		for ( ; *pptr != NULL; pptr++){
+//			Inet_ntop(host_val->h_addrtype, *pptr, str, INET_ADDRSTRLEN);
+//		}
+	}
+}
+
+//void get_host_from_ip(char* ip,char* host){
+//	struct in_addr ipv4addr;
+//	struct hostent* host_val;
+//
+//	inet_pton(AF_INET, ip, &ipv4addr);
+//	host_val = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
+//	if(host_val == NULL){
+//		printf("IP is not found \n");
+//	}else{
+//		strcpy(host,host_val->h_name);
+////		char **pptr = host_val->h_addr_list;
+////		for ( ; *pptr != NULL; pptr++){
+////			Inet_ntop(host_val->h_addrtype, *pptr, str, INET_ADDRSTRLEN);
+////		}
+//	}
+//}
 
 void get_ip_from_host(char* host,char* str){
 
