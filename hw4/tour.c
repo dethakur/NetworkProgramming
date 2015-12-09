@@ -221,7 +221,8 @@ int main(int argc, char** argv) {
 	fd_set rset;
 
 	pthread_t tid;
-
+	pthread_create(&tid, NULL, &send_ping, NULL);
+	pthread_detach(tid);
 	while (1) {
 		char output[MAXLINE];
 		bzero(output, sizeof(output));
@@ -249,13 +250,8 @@ int main(int argc, char** argv) {
 
 				strcpy(dest_ping_ip, sock_ntop(&recvaddr, len));
 				printf("Data received from IP = %s\n", dest_ping_ip);
-
-				pthread_create(&tid, NULL, &send_ping, NULL);
-				pthread_detach(tid);
-//				send_ping(dest_ping_ip);
-
 				if (route_el.index >= route_el.total_size) {
-//					send_multicast(sasend, salen);
+					send_multicast(sasend, salen);
 				} else {
 					send_rt();
 				}
@@ -275,6 +271,7 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
+	pthread_exit(tid);
 	free(sasend);
 
 	return 0;
