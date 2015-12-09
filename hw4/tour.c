@@ -19,7 +19,6 @@ int rawfd;
 int pgfd;
 int seq = 0;
 
-
 volatile int keep_pinging = 1;
 pthread_mutex_t mutex;
 char* ips_to_ping[];
@@ -47,7 +46,6 @@ void set_icmp(struct icmp *icmp_ptr) {
 
 void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 		char *dest_ip, int if_index, int rawfd) {
-
 
 	struct icmp icmp;
 	bzero(&icmp, sizeof(icmp));
@@ -127,6 +125,17 @@ void add_ip_to_ping(char *dest_ping_ip) {
 		}
 	}
 	strcpy(ips_to_ping[ip_to_ping_index++], dest_ping_ip);
+
+	// although technically ping request is not sent here,
+	// we are printing that ping req is sent because this printing
+	// has to be done only once per ping target
+	struct in_addr ipv4addr;
+	inet_pton(AF_INET, dest_ping_ip, &ipv4addr);
+	struct hostent *he = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
+	struct addrinfo *ai = Host_serv(he->h_name, NULL, 0, 0);
+	char *h = Sock_ntop_host(ai->ai_addr, ai->ai_addrlen);
+	printf("PING %s (%s): %d data bytes\n", ai->ai_canonname ? ai->ai_canonname
+			: h, h, 56);
 }
 
 int main(int argc, char** argv) {
@@ -198,7 +207,7 @@ int main(int argc, char** argv) {
 		int max_val = max(rt_sock, udp_recv_sock);
 		max_val = max(max_val, pgfd);
 		max_val = max_val + 1;
-//		printf("Waiting for select!\n");
+		//		printf("Waiting for select!\n");
 		Select(max_val, &rset, NULL, NULL, NULL);
 
 		if (FD_ISSET(rt_sock, &rset)) {
@@ -213,7 +222,7 @@ int main(int argc, char** argv) {
 				strcpy(dest_ping_ip, sock_ntop(&recvaddr, len));
 				add_ip_to_ping(dest_ping_ip);
 				if (route_el.index >= route_el.total_size) {
-//					send_multicast(sasend, salen);
+					//					send_multicast(sasend, salen);
 				} else {
 					send_rt();
 				}
@@ -222,27 +231,25 @@ int main(int argc, char** argv) {
 
 		if (FD_ISSET(pgfd, &rset)) {
 
-//			printf("[PING]received something on ping socket\n");
+			//			printf("[PING]received something on ping socket\n");
 			Recvfrom(pgfd, output, MAXLINE, 0, NULL, NULL);
 			char *p = output;
 
 			struct ip ip_hdr;
-			memcpy(&ip_hdr,p,sizeof(ip_hdr));
+			memcpy(&ip_hdr, p, sizeof(ip_hdr));
 
 			p = p + sizeof(ip_hdr);
 
 			struct icmp icmp_pkt; //= p + 20;
-			memcpy(&icmp_pkt,p,sizeof(icmp_pkt));
+			memcpy(&icmp_pkt, p, sizeof(icmp_pkt));
 
-			if(icmp_pkt.icmp_id == getpid()){
+			if (icmp_pkt.icmp_id == getpid()) {
 				char src_ip[INET_ADDRSTRLEN];
 				char host[20];
-				strcpy(src_ip,inet_ntoa(ip_hdr.ip_src));
-				get_host_from_ip(src_ip,host);
+				strcpy(src_ip, inet_ntoa(ip_hdr.ip_src));
+				get_host_from_ip(src_ip, host);
 
-				printf("Ping Received by %s - %s \n",src_ip,host);
-
-
+				printf("Ping Received by %s - %s \n", src_ip, host);
 
 			}
 
@@ -277,7 +284,8 @@ void send_ping() {
 			areq((char*) ips_to_ping[k], &dest_hwaddr);
 			areq(src_ip, &src_hwaddr);
 
-//			printf("Sending ping to %s!!\n", ips_to_ping[k]);
+
+			//			printf("Sending ping to %s!!\n", ips_to_ping[k]);
 			send_ping_request(dest_hwaddr.sll_addr, src_hwaddr.sll_addr,
 					src_ip, ips_to_ping[k], src_hwaddr.sll_ifindex, rawfd);
 			//	alarm(1);
