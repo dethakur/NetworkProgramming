@@ -1,0 +1,26 @@
+
+--- Team Members ---
+Devashish Thakur
+Kaushik Devarajaiah
+
+Same command to run the program - 
+
+./tour vm1 vm2 vm4 vm5 vm6 vm3 vm8 vm9 vm10 vm6 vm7 vm8 vm4 vm2 vm7
+
+Before running tour , arp should be running in all the machines.
+
+The tour.c does areq() method call to get data from the cache. This invokes the method process_frame() in arp.c. 
+If the IP address is not in cache , a broadcast request is sent to find the IP-Cache mapping and is saved in static data strucutre
+named arp_cache_details.
+
+In Tour.c , each time an IP is invoked for the first time , it joins multicast on IP 224.220.108.121 and port 1987.
+It sends ping to previous IP in  method sendping(). Duplicate pings are not sent. This method is invoked my a thread 
+which is called every one second.
+
+When the tour ends send_multicast() is called which sends multicast to all the IPs which had joined the multicast address.
+
+In logs prints like [ARP-REQ] or [ARP-RESP] will show the query done to ARP from tour.
+
+
+
+
