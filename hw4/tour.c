@@ -5,6 +5,7 @@
 #include <linux/if_packet.h>
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
+#define NUM_IPS_PING 20
 
 #define ETH_HDRLEN sizeof(struct ethhdr)
 #define IP4_HDRLEN sizeof(struct ip)
@@ -48,7 +49,7 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 	//	display_mac_addr(dst_mac);
 	//	printf("\n hello..\n ");
 
-//	printf("[Ping] Sending!!!");
+	//	printf("[Ping] Sending!!!");
 	struct icmp icmp;
 	bzero(&icmp, sizeof(icmp));
 	set_icmp(&icmp);
@@ -171,7 +172,31 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 //
 //}
 
+volatile int keep_pinging = 1;
+pthread_mutex_t mutex;
+char* ips_to_ping[];
+int ip_to_ping_index = 0;
+
+void add_ip_to_ping(char *dest_ping_ip) {
+	int k = 0;
+	for (k = 0; k < ip_to_ping_index; k++) {
+		if (strcmp(dest_ping_ip, ips_to_ping[k]) == 0) {
+			printf("Already added ip: %s to ping list\n", dest_ping_ip);
+			return;
+		}
+		if (strcmp(src_ip, dest_ping_ip) == 0) {
+			printf("Not adding self to ping list\n");
+			return;
+		}
+	}
+	strcpy(ips_to_ping[ip_to_ping_index++], dest_ping_ip);
+}
+
 int main(int argc, char** argv) {
+	int k = 0;
+	for (k = 0; k < NUM_IPS_PING; k++) {
+		ips_to_ping[k] = (char *) malloc(20);
+	}
 
 	gethostname(src_vm, MAX_VM_NAME_LEN);
 	get_ip_from_host(src_vm, src_ip);
@@ -229,8 +254,8 @@ int main(int argc, char** argv) {
 		FD_ZERO(&rset);
 		FD_SET(rt_sock, &rset);
 		FD_SET(udp_recv_sock, &rset);
-//		FD_SET(pf_sock, &rset);
-//		FD_SET(rawfd, &rset);
+		//		FD_SET(pf_sock, &rset);
+		//		FD_SET(rawfd, &rset);
 		FD_SET(pgfd, &rset);
 
 		int max_val = max(rt_sock, udp_recv_sock);
@@ -249,9 +274,10 @@ int main(int argc, char** argv) {
 				struct hwaddr temp_addr;
 
 				strcpy(dest_ping_ip, sock_ntop(&recvaddr, len));
+				add_ip_to_ping(dest_ping_ip);
 				printf("Data received from IP = %s\n", dest_ping_ip);
 				if (route_el.index >= route_el.total_size) {
-					send_multicast(sasend, salen);
+//					send_multicast(sasend, salen);
 				} else {
 					send_rt();
 				}
@@ -260,7 +286,7 @@ int main(int argc, char** argv) {
 
 		if (FD_ISSET(pgfd, &rset)) {
 			printf("[PING]received something on ping socket\n");
-			Recvfrom(pgfd, output, MAXLINE, 0, NULL,NULL);
+			Recvfrom(pgfd, output, MAXLINE, 0, NULL, NULL);
 		}
 
 		if (FD_ISSET(udp_recv_sock, &rset)) {
@@ -268,6 +294,9 @@ int main(int argc, char** argv) {
 			//Data received from multicast!
 			Recvfrom(udp_recv_sock, output, MAXLINE, 0, NULL, NULL);
 			printf("Node %s. Received : %s\n", src_vm, output);
+			pthread_mutex_lock(&mutex);
+			keep_pinging = 0;
+			pthread_mutex_unlock(&mutex);
 			break;
 		}
 	}
@@ -278,22 +307,23 @@ int main(int argc, char** argv) {
 }
 
 void send_ping() {
-//	signal(SIGALRM, send_ping);
+	//	signal(SIGALRM, send_ping);
+	while (keep_pinging == 1) {
+		pthread_mutex_lock(&mutex);
+		int idx = ip_to_ping_index;
+		pthread_mutex_unlock(&mutex);
+		int k = 0;
+		for (k = 0; k < idx; k++) {
+			struct hwaddr src_hwaddr, dest_hwaddr;
+			areq((char*) ips_to_ping[k], &dest_hwaddr);
+			areq(src_ip, &src_hwaddr);
 
-	struct hwaddr src_hwaddr, dest_hwaddr;
-
-	if (strcmp(dest_ping_ip, src_ip) == 0) {
-		return;
-	}
-	areq((char*) dest_ping_ip, &dest_hwaddr);
-	areq(src_ip, &src_hwaddr);
-	while (1) {
-		printf("Sending ping!!!\n");
-		send_ping_request(dest_hwaddr.sll_addr, src_hwaddr.sll_addr, src_ip,
-				dest_ping_ip, src_hwaddr.sll_ifindex, rawfd);
-//	alarm(1);
-		sleep(3);
-
+			printf("Sending ping to %s!!\n", ips_to_ping[k]);
+			send_ping_request(dest_hwaddr.sll_addr, src_hwaddr.sll_addr,
+					src_ip, ips_to_ping[k], src_hwaddr.sll_ifindex, rawfd);
+			//	alarm(1);
+			sleep(1);
+		}
 	}
 }
 
@@ -310,7 +340,8 @@ void populate_route(int argc, char** argv) {
 
 void send_multicast(SA* sadest, socklen_t salen) {
 	char output[MAXLINE];
-	sprintf(output,
+	sprintf(
+			output,
 			"<<<< This is %s. Tour has ended. Group members please identify yourselves >>>>",
 			src_vm);
 	printf("Node %s. Sending : %s\n", src_vm, output);
