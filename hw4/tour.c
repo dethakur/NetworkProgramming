@@ -23,7 +23,8 @@ int pid;
 volatile int keep_pinging = 1;
 pthread_mutex_t mutex;
 char* ips_to_ping[];
-int ip_to_ping_index = 0;
+int next_ip_index = 0;
+int next_ip_to_ping_index = 0;
 
 char dest_ping_ip[INET_ADDRSTRLEN];
 
@@ -115,28 +116,17 @@ void send_ping_request(char* dst_mac, char* src_mac, char * src_ip,
 
 void add_ip_to_ping(char *dest_ping_ip) {
 	int k = 0;
-	for (k = 0; k < ip_to_ping_index; k++) {
+	for (k = 0; k < next_ip_index; k++) {
 		if (strcmp(dest_ping_ip, ips_to_ping[k]) == 0) {
-			printf("Already added ip: %s to ping list\n", dest_ping_ip);
+			//			printf("Already added ip: %s to ping list\n", dest_ping_ip);
 			return;
 		}
 		if (strcmp(src_ip, dest_ping_ip) == 0) {
-			printf("Not adding self to ping list\n");
+			//			printf("Not adding self to ping list\n");
 			return;
 		}
 	}
-	strcpy(ips_to_ping[ip_to_ping_index++], dest_ping_ip);
-
-	// although technically ping request is not sent here,
-	// we are printing that ping req is sent because this printing
-	// has to be done only once per ping target
-	struct in_addr ipv4addr;
-	inet_pton(AF_INET, dest_ping_ip, &ipv4addr);
-	struct hostent *he = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET);
-	struct addrinfo *ai = Host_serv(he->h_name, NULL, 0, 0);
-	char *h = Sock_ntop_host(ai->ai_addr, ai->ai_addrlen);
-	printf("PING %s (%s): %d data bytes\n", ai->ai_canonname ? ai->ai_canonname
-			: h, h, 56);
+	strcpy(ips_to_ping[next_ip_index++], dest_ping_ip);
 }
 
 void proc_v4(char *ptr, ssize_t len, struct timeval *tvrecv, char * src_ip) {
@@ -260,7 +250,8 @@ int main(int argc, char** argv) {
 				strcpy(dest_ping_ip, sock_ntop(&recvaddr, len));
 				add_ip_to_ping(dest_ping_ip);
 				if (route_el.index >= route_el.total_size) {
-					//					send_multicast(sasend, salen);
+					sleep(3);
+					send_multicast(sasend, salen);
 				} else {
 					send_rt();
 				}
@@ -289,7 +280,7 @@ int main(int argc, char** argv) {
 
 				struct timeval tval;
 				Gettimeofday(&tval, NULL);
-//				printf("Ping Received by %s - %s \n", src_ip, host);
+				//				printf("Ping Received by %s - %s \n", src_ip, host);
 
 				proc_v4(output, len, &tval, src_ip);
 			}
@@ -317,7 +308,7 @@ void send_ping() {
 	//	signal(SIGALRM, send_ping);
 	while (keep_pinging == 1) {
 		pthread_mutex_lock(&mutex);
-		int idx = ip_to_ping_index;
+		int idx = next_ip_index;
 		pthread_mutex_unlock(&mutex);
 		int k = 0;
 		for (k = 0; k < idx; k++) {
@@ -325,7 +316,22 @@ void send_ping() {
 			areq((char*) ips_to_ping[k], &dest_hwaddr);
 			areq(src_ip, &src_hwaddr);
 
-			//			printf("Sending ping to %s!!\n", ips_to_ping[k]);
+			if (next_ip_to_ping_index < next_ip_index) {
+				// IP at next_ip_to_ping_index has not yet been pinged, so print the ping request message
+				// before we send the first ping request for this IP.
+
+				struct in_addr ipv4addr;
+				inet_pton(AF_INET, ips_to_ping[next_ip_to_ping_index],
+						&ipv4addr);
+				struct hostent *he = gethostbyaddr(&ipv4addr, sizeof ipv4addr,
+						AF_INET);
+				struct addrinfo *ai = Host_serv(he->h_name, NULL, 0, 0);
+				char *h = Sock_ntop_host(ai->ai_addr, ai->ai_addrlen);
+				printf("PING %s (%s): %d data bytes\n",
+						ai->ai_canonname ? ai->ai_canonname : h, h, 56);
+				next_ip_to_ping_index++;
+			}
+
 			send_ping_request(dest_hwaddr.sll_addr, src_hwaddr.sll_addr,
 					src_ip, ips_to_ping[k], src_hwaddr.sll_ifindex, rawfd);
 			//	alarm(1);
