@@ -10,7 +10,7 @@ CFLAGS = ${FLAGS} -I/home/courses/cse533/Stevens/unpv13e/lib
 all: tour arp clean
 
 tour: get_hw_addrs.o tour.o common.o
-	${CC} ${FLAGS} -o tour tour.o common.o get_hw_addrs.o ${LIBS}
+	${CC} ${FLAGS} -o tour_deva_kau tour.o common.o get_hw_addrs.o ${LIBS}
 	
 pwhaddr: get_hw_addrs.o prhwaddrs.o
 	${CC} ${CFLAGS} -o prhwaddrs prhwaddrs.o get_hw_addrs.o ${LIBS}
@@ -27,7 +27,7 @@ common.o: common.c common.h
 	${CC} ${CFLAGS} -c common.c	
 
 arp: arp.o common.o
-	${CC} ${FLAGS} -o arp arp.o get_hw_addrs.o common.o ${LIBS}
+	${CC} ${FLAGS} -o arp_deva_kau arp.o get_hw_addrs.o common.o ${LIBS}
 
 arp.o: arp.c  common.h
 	${CC} ${CFLAGS} -c arp.c 
@@ -36,4 +36,4 @@ clean:
 	rm *.o
 	
 remove:
-	rm tour arp
+	rm tour_deva_kau arp_deva_kau

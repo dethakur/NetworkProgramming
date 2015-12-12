@@ -1,11 +1,15 @@
 
 --- Team Members ---
-Devashish Thakur
+Devashish Thakur - Initial submitter, whose submission was re-sumbitted by Kaushik (member below)
 Kaushik Devarajaiah
 
 Same command to run the program - 
-
-./tour vm1 vm2 vm4 vm5 vm6 vm3 vm8 vm9 vm10 vm6 vm7 vm8 vm4 vm2 vm7
+1) make
+2) ./deploy_app tour_deva_kau arp_deva_kau
+3) ./start_app arp_deva_kau
+4) Running tour -> 
+On all but one VM run -> ./tour_deva_kau
+On the VM not run above, run -> ./tour_deva_kau vm1 vm2 vm4 vm5 vm6 vm3 vm8 vm9 vm10 vm6 vm7 vm8 vm4 vm2 vm7
 
 Before running tour , arp should be running in all the machines.
 
